@@ -33,7 +33,6 @@ from abc import ABC, abstractmethod
 import pandas as pd
 
 from src.utils.file import FileGZDF
-from src.analysis.describe import describe_qual, describe_quant
 # --------------------------------------------------------------------------- #
 #                                DataComponent                                #
 # --------------------------------------------------------------------------- #
@@ -95,8 +94,6 @@ class DataCollection(DataComponent):
         self._datasets = {}
         self._name = name
         self._df = df
-        self._description = {}
-        self._mutable = mutable
         
     @property
     def n_datasets(self):
@@ -134,7 +131,6 @@ class DataCollection(DataComponent):
         except KeyError as e:
             print(e)
 
-
 # --------------------------------------------------------------------------- #
 #                              DataSet                                        #
 # --------------------------------------------------------------------------- #
@@ -147,16 +143,12 @@ class DataSet(DataComponent):
         The name of the dataset.
     df : DataFrame (Optional)
         The content in DataFrame format.
-    mutable : bool
-        Indicates whether the data can be modified.
     """
     _FILE = {'gz': FileGZDF}
 
     def __init__(self, name, df=None):                
         self._name = name
         self._df = df
-        self._description = {}
-        self._mutable = mutable
 
     @property
     def name(self):
@@ -188,15 +180,16 @@ class DataSet(DataComponent):
         self._filename = value
         return self
 
-    def read(self, filename):
+    def import_data(self, filename):
         """Reads the data from the location designated by the filename."""
+        self._filename = filename
         filetype = filename.split(".")[-1]
         f = self._FILE.get(filetype)
         df = f.read(filename)
         return df
 
-    def write(self, df, filename):
-        """Writes the data to the location designated by the filename."""
+    def export_data(self, df, filename):
+        """Writes the data to the location designated by the filename."""        
         filetype = filename.split(".")[-1]        
         f = self._FILE.get(filetype)
         f.write(df, filename)
@@ -223,43 +216,13 @@ class DataSet(DataComponent):
             else:
                 return self._df[["attributes"]]
 
-    def remove(self, filename):
-        """Removes a file."""
-        f = FileGZDF()
-        f.remove(filename)
-        return self
-
-    def copy(self, frompath, topath):
-        """Copies a data object from frompath to topath."""
-        self._frompath = frompath
-        self._topath = topath
-        df = self.read(frompath)
-        self.write(df, topath)
-        return self
-
-    def move(self, frompath, topath):
-        """Moves a dataset from 'frompath' to 'topath' if mutable."""
-        if self._mutable:
-            self._frompath = frompath
-            self._topath = topath
-            df = self.read(frompath)
-            self.write(df, topath)
-        else:
-            raise Exception("This data object is immutable and cannot be moved.")
-        return self
-
-
-
-
 # --------------------------------------------------------------------------- #
 #                              AirbnbData                                     #
 # --------------------------------------------------------------------------- #
-class AirbnbData(DataComponent):
-
-    _NUMBER = ["float", "float64", "int", "int64"]
+class AirbnbData(DataSet):
 
     def __init__(self, name, df=None):                
-        super(AirbnbData, self).__init__(name=name, df=df, mutable=mutable)
+        super(AirbnbData, self).__init__(name=name, df=df)
 
     def get_data(self):
         return self._df
@@ -270,32 +233,6 @@ class AirbnbData(DataComponent):
     def remove(self, name):
         pass
 
-    def describe(self, attribute):
-        """Returns descriptive statistics for all attributes."""        
-        if attribute not in self._df.columns:
-            raise ValueError("Attribute {attr} not valid for this data \
-                            object.".format(attr=attribute)) 
-        if self._df[attribute].dtypes in self._NUMBER:
-            self._description = describe_quant(x=self._df[attribute])
-        else:
-            self._description = describe_qual(x=self._df[attribute])          
-        return self._description
 
-    def describe_all(self):
-        """Returns descriptive statistics for the attribute indicated."""        
-        df_qual = pd.DataFrame()
-        df_quant = pd.DataFrame()        
-        for col in self._df.columns:            
-            if self._df[col].dtypes in self._NUMBER:
-                d = describe_quant(x=self._df[col])
-                d = pd.DataFrame(d, index=[0]).T
-                df_quant = pd.concat([df_quant,d], axis=1)
-            else:
-                d = describe_qual(x=self._df[col])
-                d = pd.DataFrame(d, index=[0]).T
-                df_qual = pd.concat([df_qual,d], axis=1)
-
-        self._description[self._name] = {'quant': df_quant, 'qual': df_qual}
-        return self._description
 
 
