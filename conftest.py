@@ -18,11 +18,22 @@
 # Copyright (c) 2020 DecisionScients                                           #
 # ============================================================================ #
 # %%
-import numpy as np
-from pytest import fixture
 import warnings
 warnings.filterwarnings('ignore')
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+
+import numpy as np
+from pytest import fixture
+
+from Airbnb.src.data.data_classes import DataCollection, DataSet
+
+@fixture(scope="session")
+def get_dataset():
+    ds = DataSet(name='test_dataset')
+    filename = "./tests/data/san_francisco.csv"
+    ds.import_data(filename)
+    return ds
+
 
 
     

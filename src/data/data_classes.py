@@ -32,7 +32,7 @@ import os
 from abc import ABC, abstractmethod
 import pandas as pd
 
-from src.utils.file import FileGZDF
+from ..utils.file import File
 # --------------------------------------------------------------------------- #
 #                                DataComponent                                #
 # --------------------------------------------------------------------------- #
@@ -51,7 +51,6 @@ class DataComponent(ABC):
     def __init__(self, name, df=None):
         self._name = name
         self._df = df
-        self._datasets = {}
 
     @property
     def name(self):
@@ -91,9 +90,8 @@ class DataCollection(DataComponent):
     """
 
     def __init__(self, name, df=None):
+        super(DataCollection, self).__init__(name=name, df=df)
         self._datasets = {}
-        self._name = name
-        self._df = df
         
     @property
     def n_datasets(self):
@@ -144,11 +142,8 @@ class DataSet(DataComponent):
     df : DataFrame (Optional)
         The content in DataFrame format.
     """
-    _FILE = {'gz': FileGZDF}
-
-    def __init__(self, name, df=None):                
-        self._name = name
-        self._df = df
+    def __init__(self, name, df=None):
+        super(DataSet, self).__init__(name=name, df=df)                
 
     @property
     def name(self):
@@ -160,61 +155,51 @@ class DataSet(DataComponent):
         return self
 
     @property
-    def attributes(self):
-        return self._df.columns
+    def columns(self):
+        return self._df.columns.values.tolist()
     
     @property
     def nrows(self):
-        return self._df.count()
+        return len(self._df)
 
     @property
     def ncols(self):
-        return self._df.columns.count()
+        return len(self.columns)
 
-    @property
-    def filename(self):
-        return self._filename
+    def add(self, data):
+        pass
 
-    @filename.setter
-    def filename(self, value):
-        self._filename = value
-        return self
+    def remove(self, name):
+        pass
 
     def import_data(self, filename):
         """Reads the data from the location designated by the filename."""
-        self._filename = filename
-        filetype = filename.split(".")[-1]
-        f = self._FILE.get(filetype)
-        df = f.read(filename)
-        return df
-
-    def export_data(self, df, filename):
-        """Writes the data to the location designated by the filename."""        
-        filetype = filename.split(".")[-1]        
-        f = self._FILE.get(filetype)
-        f.write(df, filename)
+        f = File()
+        self._df = f.read(filename)
         return self
 
-    def get_data(self):
-        """Returns the dataset in the DataFrame format."""
-        return self._df
+    def export_data(self, filename, df):
+        """Writes the data to the location designated by the filename."""        
+        f = File()
+        f.write(filename, df)
+        return self
 
-    def get_attribute(self, attribute):
-        """Returns a series containing the attribute requested."""
-        if attribute not in self._df.columns:
-            raise ValueError("Attribute {attr} not valid for this data \
-                            object.".format(attr=attribute))
-        else:
+    def get_data(self, attribute=None):
+        """Method to return all data or one, or more attributes.
+
+        Parameters
+        ----------
+        attribute : str or list (Optional)
+            The attribute or attributes to retrieve
+
+        Returns
+        -------
+        DataFrame or Series
+        
+        """
+        if attribute:
             return self._df[attribute]
-
-    def get_attributes(self, attributes):
-        """Returns the DataFrame with the attributes requested."""
-        for attribute in attributes:
-            if attribute not in self._df.columns:
-                raise ValueError("Attribute {attr} not valid for this data \
-                                object.".format(attr=attribute))
-            else:
-                return self._df[["attributes"]]
+        return self._df
 
 # --------------------------------------------------------------------------- #
 #                              AirbnbData                                     #
