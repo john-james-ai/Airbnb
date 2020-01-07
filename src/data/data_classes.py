@@ -95,7 +95,10 @@ class DataCollection(DataComponent):
         
     @property
     def n_datasets(self):
-        return len(self._datasets)
+        if self._datasets:
+            return len(self._datasets)
+        else:
+            return 0
 
     @property
     def dataset_names(self):
@@ -105,29 +108,57 @@ class DataCollection(DataComponent):
         return names
 
 
-    def get_data(self, name):
-        try:
-            return self._datasets[name]
-        except (KeyError) as e:
-            print(e)
-            return self
+    def get_data(self, name=None):
+        if name:
+            return self._datasets[name]            
+        else:
+            return self._datasets
 
-    def get_datasets(self):
-        return self._datasets
-
-
-    def add(self, data):
+    def add(self, dataset):
         """Adds a DataSet object to the collection."""
-        name = data.name
-        self._datasets[name] = data        
+        name = dataset.name
+        self._datasets[name] = dataset
         return self
 
     def remove(self, name):
         """Removes a DataSet object from the collection."""
-        try:
-            del self._datasets[name]
-        except KeyError as e:
-            print(e)
+        del self._datasets[name]        
+        return self
+
+    def import_data(self, directory):
+        """Creates DataSet objects, imports the data and adds the DataSets.
+
+        Parameters
+        ----------
+        directory : str
+            The directory containing the files to import.
+        """
+
+        filenames = os.listdir(directory)
+        for filename in filenames:
+            name = filename.split(".")[0]
+            dataset = DataSet(name=name)
+            path = os.path.join(directory, filename)
+            dataset.import_data(filename=path)
+            self.add(dataset=dataset)
+        return self
+
+    def export_data(self, directory, file_format='csv'):
+        """Exports the data from contained DataSets to the directory in format.
+
+        Parameters
+        ----------
+        directory : str
+            The directory to which the data will be exported.
+        file_format : str
+            The format in which the data will be saved.
+        """
+        for name, dataset in self._datasets.items():
+            filename = name + "." + file_format
+            path = os.path.join(directory, filename)
+            dataset.export_data(filename=path)
+        return self
+
 
 # --------------------------------------------------------------------------- #
 #                              DataSet                                        #
@@ -178,10 +209,10 @@ class DataSet(DataComponent):
         self._df = f.read(filename)
         return self
 
-    def export_data(self, filename, df):
+    def export_data(self, filename):
         """Writes the data to the location designated by the filename."""        
         f = File()
-        f.write(filename, df)
+        f.write(filename, self._df)
         return self
 
     def get_data(self, attribute=None):
@@ -200,24 +231,3 @@ class DataSet(DataComponent):
         if attribute:
             return self._df[attribute]
         return self._df
-
-# --------------------------------------------------------------------------- #
-#                              AirbnbData                                     #
-# --------------------------------------------------------------------------- #
-class AirbnbData(DataSet):
-
-    def __init__(self, name, df=None):                
-        super(AirbnbData, self).__init__(name=name, df=df)
-
-    def get_data(self):
-        return self._df
-
-    def add(self, dataset):
-        pass
-
-    def remove(self, name):
-        pass
-
-
-
-

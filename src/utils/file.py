@@ -81,6 +81,7 @@ class FileGZ(BaseFile):
 
         self._filename = filename
         self._df = df
+        check_dir(filename)
         df.to_csv(filename, compression='gzip')
         return self
         
@@ -129,6 +130,7 @@ class FileCSV(BaseFile):
 
         self._filename = filename
         self._df = df
+        check_dir(filename)
         df.to_csv(filename)
         return self
         
@@ -159,3 +161,13 @@ class File:
         """Obtains a file handler based upon the file extension, then reads.""" 
         file_handler = self._get_file_handler(filename)
         return file_handler.write(filename, df)
+
+# ---------------------------------------------------------------------------- #
+#                                    HELPERS                                   #   
+# ---------------------------------------------------------------------------- #        
+def check_dir(filename):
+    directory = os.path.dirname(filename)
+    if os.path.exists(directory):
+        pass
+    else:
+        os.mkdir(directory)

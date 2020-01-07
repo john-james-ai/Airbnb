@@ -27,7 +27,7 @@ from pytest import fixture
 
 from Airbnb.src.data.data_classes import DataCollection, DataSet
 
-@fixture(scope="session")
+@fixture(scope="function")
 def get_dataset():
     ds = DataSet(name='test_dataset')
     filename = "./tests/data/san_francisco.csv"
