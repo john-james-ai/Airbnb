@@ -21,7 +21,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
-from scipy.stats import kurtosis, skew
+from scipy.stats import kurtosis, skew, shapiro
 # ---------------------------------------------------------------------------- #
 #                             UNIVARIATE                                       #
 # ---------------------------------------------------------------------------- #
@@ -71,38 +71,29 @@ class Describe(Univariate):
         self._analysis_qual = {}
         self._fit = False
         
-    def _describe_quant(self, x):
+    def _describe_quant(self, df):
         """Computes descriptive statistics for numeric attributes."""        
-        d = {}
-        a = x.describe()
-        d['count'] = a[0]
-        d['na'] = x.isna().sum()
-        d['min'] = a[3]
-        d['5%'] = x.quantile(q=0.05)
-        d['10%'] = x.quantile(q=0.1)
-        d['25%'] = a[4]
-        d['50%'] = a[5]
-        d['mean'] = a[1]
-        d['mode'] = x.mode()
-        d['75%'] = a[6]
-        d['90%'] = x.quantile(q=0.9)
-        d['95%'] = x.quantile(q=0.95)
-        d['max'] = a[7]
-        d['std'] = a[2]
-        d['kurtosis'] = kurtosis(x)
-        d['skew'] = skew(x)
-        return d
+        
+        a = df.describe(percentiles=[.05,.1,.25,.5,.75,.9,.95],
+                        include=np.number)
+        a = a.T
+        a['na'] = df.isna().sum()
+        a['kurtosis'] = df.kurtosis(axis=0)
+        a['skew'] = df.skew(axis=0)
+        
+        a = a[['count', 'na', 'min', '5%', '10%', '25%', '50%', 'mean', 
+               '75%', '90%', '95%', 'max', 'std', 'kurtosis', 'skew']]
+        
+        return a
 
-    def _describe_qual(self, x):
+    def _describe_qual(self, df):
         """Computes descriptive statistics for qualitative variables."""
-        d = {}
-        a = x.describe()    
-        d['count'] = a[0]
-        d['na'] = pd.isnull(x)
-        d['unique'] = a[1]
-        d['top'] = a[2]
-        d['freq'] = a[3]
-        return d
+        
+        a = df.describe(include=np.object)
+        a = a.T
+        a['na'] = df.isnull().sum().T
+        a = a[['count', 'na', 'unique', 'top', 'freq']]
+        return a
 
     def fit(self):
         """Fits the analysis to the data."""        
@@ -112,34 +103,29 @@ class Describe(Univariate):
 
         df = self._dataset.get_data()        
         
-        # Analyze numerics
-        df_quant = df.select_dtypes(include=self._NUMERICS)
-        for col in df_quant.columns:
-            self._analysis_quant[col] = self._describe_quant(df_quant[col])
-        self._analysis['quant'] = self._analysis_quant
+        # Analyze numerics   
+        self._analysis['quant'] = self._describe_quant(df)
 
         # Analyze categoricals
-        df_qual =  df.select_dtypes(exclude=self._NUMERICS)
-        for col in df_qual.columns:
-            self._analysis_qual[col] = self._describe_qual(df_qual[col])
-        self._analysis['qual'] = self._analysis_qual
+        self._analysis['qual'] = self._describe_qual(df)
 
         self._fit = True
 
         return self
-
+    
     def get_analysis(self, attribute=None):
         """Returns the complete analysis or that of a specific attribute."""
         if not self._fit:
             raise Exception("The analysis has not been fit to the DataSet object.")
         if attribute:
             if attribute == 'quant':
-                return self._analysis_quant
+                return self._analysis['quant']
             elif attribute== 'qual':
-                return self._analysis_qual
+                return self._analysis['qual']
             else:
-                analysis = self._analysis_quant.get(attribute) or \
-                    self._analysis_qual.get(attribute)
+                analysis = \
+                    self._analysis['quant'].get(key=attribute, default=None) or \
+                    self._analysis['qual'].get(key=attribute, default=None)
                 if analysis:
                     return analysis
                 else:
