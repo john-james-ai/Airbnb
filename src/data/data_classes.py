@@ -231,3 +231,26 @@ class DataSet(DataComponent):
         if attribute:
             return self._df[attribute]
         return self._df
+
+    def add_columns(self, df):
+        """Adds a series or dataframe to the dataset
+
+        Parameters
+        ----------
+        df : DataFrame or Series object
+            The data to add to the dataframe.
+        """
+        self._df = pd.concat([self._df, df], axis=1, ignore_index=True) 
+        return self
+
+    def remove_columns(self, cols):
+        """Removes selected columns from the dataset.
+        
+        Parameters
+        ----------
+        cols : list
+            A list of column names to remove from the dataset
+
+        """
+        self._df = self._df.drop(columns=cols, axis=1)
+        return self
