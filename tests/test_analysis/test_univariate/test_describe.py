@@ -37,8 +37,8 @@ class DescribeTests:
     @mark.analysis_univariate_describe
     def test_analysis_univariate_describe(self, get_dataset):
         ds = get_dataset
-        d = Describe(ds)
-        d.fit()
+        d = Describe()
+        d.fit(ds)
         analysis = d.get_analysis()
         pd.set_option('display.max_columns', None)
         assert isinstance(analysis['quant'], pd.DataFrame), "No quant dataframe"

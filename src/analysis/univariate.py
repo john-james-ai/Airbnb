@@ -19,9 +19,15 @@
 # ============================================================================ #
 """This module contains the classes that perform univariate analyses."""
 from abc import ABC, abstractmethod
+from pathlib import Path
+import site
+PROJECT_DIR = Path(__file__).resolve().parents[1]
+site.addsitedir(PROJECT_DIR)
+
 import numpy as np
 import pandas as pd
 from scipy.stats import kurtosis, skew, shapiro
+
 # ---------------------------------------------------------------------------- #
 #                             UNIVARIATE                                       #
 # ---------------------------------------------------------------------------- #
@@ -35,10 +41,11 @@ class Univariate(ABC):
     
     """
     _NUMERICS = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']    
-    def __init__(self, dataset):
-        self._dataset = dataset
+    def __init__(self):
         self._analysis = {}
-        self._fit = False
+
+    def reset(self):
+        self._analysis = {}
 
     @abstractmethod
     def fit(self):
@@ -52,24 +59,12 @@ class Univariate(ABC):
 #                             DESCRIBE                                         #
 # ---------------------------------------------------------------------------- #
 class Describe(Univariate):
-    """Computes descriptive statistics for a DataSet object.
-
-    Parameters
-    ----------
-    dataset : DataSet
-              The DataSet object being analyzed.
+    """Computes descriptive statistics for a DataSet or DataCollection object.
 
     """
-    def __init__(self, dataset):
-        super(Describe, self).__init__(dataset=dataset)
-        self._analysis_quant = {}
-        self._analysis_qual = {}
-
-    def _reset(self):
+    def __init__(self):
+        super(Describe, self).__init__()
         self._analysis = {}
-        self._analysis_quant = {}
-        self._analysis_qual = {}
-        self._fit = False
         
     def _describe_quant(self, df):
         """Computes descriptive statistics for numeric attributes."""        
@@ -95,44 +90,30 @@ class Describe(Univariate):
         a = a[['count', 'na', 'unique', 'top', 'freq']]
         return a
 
-    def fit(self):
-        """Fits the analysis to the data."""        
-        self._reset()
-
-        self._analysis['name'] = self._dataset.name
-
-        df = self._dataset.get_data()        
+    def fit(self, data):
+        """Fits the analysis to the DataFrame or DataSet object."""            
+        
+        # Obtain the data from the DataSet or DataCollection
+        if isinstance(data, pd.DataFrame):
+            df = data
+        else:
+            df = data.get_data()
         
         # Analyze numerics   
-        self._analysis['quant'] = self._describe_quant(df)
+        quant_analysis = self._describe_quant(df)
 
         # Analyze categoricals
-        self._analysis['qual'] = self._describe_qual(df)
+        qual_analysis = self._describe_qual(df)
 
-        self._fit = True
+        # Package results
+        self._analysis['quant'] = quant_analysis
+        self._analysis['qual'] = qual_analysis
 
         return self
     
-    def get_analysis(self, attribute=None):
-        """Returns the complete analysis or that of a specific attribute."""
-        if not self._fit:
-            raise Exception("The analysis has not been fit to the DataSet object.")
-        if attribute:
-            if attribute == 'quant':
-                return self._analysis['quant']
-            elif attribute== 'qual':
-                return self._analysis['qual']
-            else:
-                analysis = \
-                    self._analysis['quant'].get(key=attribute, default=None) or \
-                    self._analysis['qual'].get(key=attribute, default=None)
-                if analysis:
-                    return analysis
-                else:
-                    raise AttributeError("{attr} is not a valid attribute for\
-                        the DataSet object.".format(attr=attribute))            
-        else:
-            return self._analysis
+    def get_analysis(self):
+        """Returns the analysis from the fit method."""
+        return self._analysis
 
       
 

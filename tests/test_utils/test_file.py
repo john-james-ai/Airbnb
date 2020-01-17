@@ -23,7 +23,7 @@ import os
 import pytest
 from pytest import mark
 
-from ...src.utils.file import File
+from src.data.data_classes import File
 
 class FileTests:
 

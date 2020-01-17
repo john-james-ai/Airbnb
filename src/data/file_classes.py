@@ -44,13 +44,15 @@ class FileGZ(BaseFile):
     def __init__(self):
         pass
 
-    def read(self, filename):
+    def read(self, filename, columns=None):
         """Reads a .gz file, designated by 'filename' into a DataFrame.
         
         Parameters
         ----------
         filename : str
             The relative or fully qualified file path
+        columns : list
+            A list of column names to return
 
         Returns
         -------
@@ -60,7 +62,7 @@ class FileGZ(BaseFile):
 
         self._filename = filename
         df = pd.read_csv(filename, compression='gzip', error_bad_lines=False,
-                        low_memory=False)
+                        low_memory=False, usecols=columns)
         return df
 
     def write(self, filename, df):
@@ -94,13 +96,15 @@ class FileCSV(BaseFile):
     def __init__(self):
         pass
 
-    def read(self, filename):
+    def read(self, filename, columns=None):
         """Reads a .csv file, designated by 'filename' into a DataFrame.
         
         Parameters
         ----------
         filename : str
             The relative or fully qualified file path
+        columns : list
+            A list of column names to return
 
         Returns
         -------
@@ -109,7 +113,7 @@ class FileCSV(BaseFile):
         """
 
         self._filename = filename
-        df = pd.read_csv(filename)
+        df = pd.read_csv(filename, usecols=columns)
         return df
 
     def write(self, filename, df):
@@ -152,10 +156,10 @@ class File:
         else:
             return file_handler
 
-    def read(self, filename):
+    def read(self, filename, columns=None):
         """Obtains a file handler based upon the file extension, then reads.""" 
         file_handler = self._get_file_handler(filename)
-        return file_handler.read(filename)
+        return file_handler.read(filename, columns)
 
     def write(self, filename, df):
         """Obtains a file handler based upon the file extension, then reads.""" 

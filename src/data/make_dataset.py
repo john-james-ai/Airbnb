@@ -32,6 +32,8 @@ import requests
 
 from bs4 import BeautifulSoup
 
+from data_classes import DataSet
+
 def get_data(project_dir,year, market):
     """Downloads data into raw data directory."""
     
@@ -54,8 +56,8 @@ def get_data(project_dir,year, market):
         if( zipurl.endswith('listings.csv.gz') and market in zipurl and year in zipurl):     
             city =  zipurl.split("/")[5]          
             parts = zipurl.split("/")[4:9]   
-            filename = '_'.join(parts) 
-            directory = os.path.join(raw_data_dir, city).replace("\\", "/")
+            filename = '_'.join(parts)             
+            directory = os.path.join(raw_data_dir, city, year).replace("\\", "/")
             os.makedirs(directory, exist_ok=True)
             filepath = os.path.join(directory, filename).replace("\\", "/")        
             if os.path.exists(filepath):
@@ -70,6 +72,7 @@ def get_data(project_dir,year, market):
                             if chunk: # ignore keep-alive requests
                                 fd.write(chunk)
                         fd.close()
+
 @click.command()
 @click.argument('market')
 @click.argument('year')
