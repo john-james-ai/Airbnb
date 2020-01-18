@@ -17,14 +17,23 @@
 # License: BSD                                                                 #
 # Copyright (c) 2020 DecisionScients                                           #
 # ============================================================================ #
-"""Data classes for individual data objects and containers.
+"""Data cleaning, transforming, and analysis for machine learning.
 
-This module defines a composite pattern for the following data classes:
+This module includes a Data Object abstraction, support for data cleaning
+and preparation as well as analysis and inference capabilities commonly
+performed during end-to-end analysis and machine learning projects.
 
-    * DataComponent : The interface for all data classes.
-    * DataSet : The abstract base class for all data leaf classes.
-    * DataCollection : The composite container class for data objects.
-    * AirbnbData : Data class containing data and descriptive statistics.
+This analysis and modeling framework centers upon three capabilities:
+1. Data as Objects : Data organized and managed as objects and metadata
+2. Data Curation :  Cleaning, transforming, normalizing and curating 
+3. Data Influence : Data-driven learning and change.
+
+Accordingly, the core offering is the Data object model, a composite 
+data class that integrates basic analysis and metadata. Data processing and 
+development functionality extends the data objects as they move
+through the AI process. An analysis and inference module is about
+inference, insight, and storytelling.
+
 """
 #%%
 from datetime import datetime
@@ -39,12 +48,14 @@ PROJECT_DIR = Path(__file__).resolve().parents[1]
 site.addsitedir(PROJECT_DIR)
 
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 import pandas as pd
 pd.set_option('display.max_columns', None)
 
 from src.analysis.univariate import Describe
 from src.data.file_classes import File
 from src.utils.system import get_size
+from .constants import DTYPES
 # --------------------------------------------------------------------------- #
 #                                DataComponent                                #
 # --------------------------------------------------------------------------- #
@@ -147,7 +158,7 @@ class DataCollection(DataComponent):
 
     def __init__(self, name):
         super(DataCollection, self).__init__(name)
-        self._data_collection = {}
+        self._data_collection = OrderedDict()
 
     def merge_data(self):
         """Merges all DataSets and DataCollections into a single DataFrame."""
@@ -184,12 +195,13 @@ class DataCollection(DataComponent):
         
         """
         describe = Describe()
-        describe.fit(self)            
+        df = self.merge_data()
+        describe.fit(df)            
         summary = describe.get_analysis()        
     
-        print("#=*35  Quantitative Analysis  35*=#")
+        print("#","=*35  Quantitative Analysis  35*=","#")
         print(summary['quant'])
-        print("#=*35  Qualitative Analysis  35*=#")
+        print("#","=*35  Quantitative Analysis  35*=","#")
         print(summary['qual'])            
         return summary
 
@@ -355,9 +367,6 @@ class DataSet(DataComponent):
         else:
             self._df = self._df.replace({pattern:replace}, regex=regex)
 
-    def cast_types(self, data_types):
-        """Cast objects of the dataframe to designated types."""
-        self._df = self._df.astype(data_types).dtypes
 
     def import_data(self, filename, columns=None):
         """Reads the data from filename and appends it to the dataframe member."""
@@ -388,3 +397,120 @@ class DataSet(DataComponent):
         if attribute is not None:
             return self._df[attribute]
         return self._df
+
+from .constants import DTYPES
+
+
+# --------------------------------------------------------------------------- #
+#                           TYPE CASTER                                       #
+# --------------------------------------------------------------------------- #
+
+class TypeCaster():
+    """Type casting, conversions, normalization, standardization, transformation."""
+    types = ["BOOL", "CATEGORY", "DATETIME", "FLOAT", "INT", "OBJECT"]
+
+
+    def cast_bool(self, df, labels):
+        """Casts the labeled data as type boolean."""
+        for label in labels:
+            df[label].astype('bool')
+            return df
+
+    def cast_category(self, df, labels):
+        """Casts the labeled data as type category."""
+        for label in labels:
+            df[label].astype('category')
+            return df
+
+    def cast_datetime(self, df, labels):
+        """Casts the labeled data as type datetime."""
+        for label in labels:
+            pd.to_datetime(df[[labels]])
+            return df
+            
+    def cast_float(self, df, labels):
+        """Casts the labeled data as type float."""
+        for label in labels:
+            df[label]astype('float')
+            return df            
+
+    def cast_int(self, df, labels):
+        """Casts the labeled data as type integer."""
+        for label in labels:
+            df[label]astype('int')
+            return df            
+
+    def cast_object(self, df, labels):
+        """Casts the labeled data as type integer."""
+        for label in labels:
+            df[label]astype('object')
+            return df            
+
+# --------------------------------------------------------------------------- #
+#                           QUANT STUDIO                                      #
+# --------------------------------------------------------------------------- #
+class QuantStudio(ABC):
+    """Abstract base class and interface for the treatment of quantitative data."""
+
+    def __init__(self, name):
+        self._id = uuid.uuid4()
+        self._name = name
+        self._creator = os.getlogin()
+        self._created = time.ctime(os.path.getctime(__file__))
+        self._modifier = os.getlogin()
+        self._modified = time.ctime(os.path.getmtime(__file__))        
+
+    def fit(dataset, y=None):
+        pass
+
+    def transform(dataset, y=None):
+        pass
+
+    def reverse(dataset, y=None):
+        pass
+
+
+# --------------------------------------------------------------------------- #
+#                               RINSE DATA                                    #
+# --------------------------------------------------------------------------- #
+class RinseData(QuantStudio):
+    """Basic hygeine for quantitativae data."""
+
+    def __init__(self, name):
+        super(RinseData, self).__init__(name)
+
+
+    vars = [price,weekly_price, monthly_price,	security_deposit, 
+            cleaning_fee,	extra_people]
+    df = dataset.get_data()
+    for var in vars:
+        df[var] = df[var].str.replace(',', '')
+        df[var] = df[var].str.replace('$', '')
+        df[var] = df[var].str.replace('%', '')
+    
+    dataset.add(df)
+
+    return dataset
+
+
+
+# --------------------------------------------------------------------------- #
+#                               DATA SERVER                                   #
+# --------------------------------------------------------------------------- #
+def serve_data():
+    """Serves the data forward during the preliminary inspection."""
+    
+    for year, directory in Constants.SFO.items():
+        
+        for filename in os.listdir(directory):           
+            
+            name = "_".join(filename.split("_")[1:4])
+            dataset = DataSet(name=name)
+            dataset.import_data(os.path.join(directory, filename))
+            dataset = number_rince(dataset)
+            dataset = text_rince(dataset)
+            dataset = type_cast(dataset)
+            dataset = format_data(dataset)
+            dataset = select_data(dataset)
+            dataset = check_data(dataset)
+
