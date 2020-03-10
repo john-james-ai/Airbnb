@@ -91,7 +91,7 @@ class Constants():
                "reviews_per_month"]
 
 
-        DTYPES['BOOL': ["experiences_offered",
+        DTYPES = ['BOOL': ["experiences_offered",
                         "host_has_profile_pic",
                         "host_identity_verified",
                         "host_in_town",

@@ -71,32 +71,22 @@ df : DataFrame
 """
 class DataComponent(ABC):
 
-    def __init__(self, name):
+    def __init__(self, path):
+
         self._id = uuid.uuid4()
-        self._name = name
-        self._creator = os.getlogin()
-        self._created = time.ctime(os.path.getctime(__file__))
-        self._modifier = os.getlogin()
-        self._modified = time.ctime(os.path.getmtime(__file__))
-        # System information
-        self._processor = platform.processor() 
-        self._system = platform.system()
-        self._release = platform.release()
-        self._version = platform.version()
-        self._machine = platform.machine()
-        # CPU Information
-        self._physical_cores = psutil.cpu_count(logical=False)
-        self._total_cores = psutil.cpu_count(logical=True)
-        # Memory Usage
-        svmem = psutil.virtual_memory()
-        self._total_memory = get_size(svmem.total)
-        self._avail_memory = get_size(svmem.available)
-        self._used_memory = get_size(svmem.used)
-        self._percent_memory = svmem.percent
-        # Instance variables.
+        self._name = os.path.basename(path)        
+        self._path = path
         self._df = pd.DataFrame()
-        self._metadata = pd.DataFrame()
         self._summary = pd.DataFrame()
+    
+        # meta data
+        self._metadata = {}
+        self._metadata['name'] = os.path.basename(path)
+        self._metadata['path'] = path
+        self._metadata['creator'] = os.getlogin()
+        self._metadata['created'] = time.ctime(os.path.getctime(__file__))
+        self._metadata['modifier'] = os.getlogin()
+        self._metadata['modified'] = time.ctime(os.path.getmtime(__file__))
 
     def metadata(self):
         """Prints object metadata."""
@@ -106,23 +96,6 @@ class DataComponent(ABC):
         print(f"Created: {self._created}")
         print(f"Modifier: {self._modifier}")
         print(f"Modified: {self._modified}")
-        print("#","="*30,  "System Information",  "="*30,"#")
-        print(f"System: {self._processor}")
-        print(f"Node Name: {self._system}")
-        print(f"Release: {self._release}")
-        print(f"Version: {self._version}")
-        print(f"Machine: {self._machine}")
-        print("#","="*30, "CPU Info", "="*30,"#")
-        # number of cores
-        print("Physical cores:", self._physical_cores)
-        print("Total cores:", self._total_cores)
-        # Memory Information
-        print("#","="*30, "Memory Information", "="*30,"#")
-        # get the memory details        
-        print(f"Total: {self._total_memory}")
-        print(f"Available: {self._avail_memory}")
-        print(f"Used: {self._used_memory}")
-        print(f"Percentage: {self._percent_memory}%")        
 
     @property
     def name(self):

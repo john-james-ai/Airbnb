@@ -1,0 +1,19 @@
+# Exploratory Data Analysis
+## Summary of Listings Data
+```{python summary, eval=T, echo=F, code=readLines('../notebooks/1.0_data_summary.py')}
+```
+
+`r kfigr::figr(label = "eda_summary", prefix = TRUE, link = TRUE, type="Table")`: San Francisco Listings Summary
+```{r eda_summary, eval=T, echo=F, results='asis'}
+kable(py$summary) %>%
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=T)
+```
+## Columns by Dataset
+`r kfigr::figr(label = "eda_columns", prefix = TRUE, link = TRUE, type="Table")`: Columns by Dataset
+```{r eda_columns, eval=T, echo=F, results='asis'}
+kable(py$columns) %>%
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=T)
+```
+
+
+## Codebook

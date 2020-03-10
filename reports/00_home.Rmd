@@ -21,8 +21,6 @@ library(plotly)
 library(reticulate)
 library(rmarkdown)
 use_condaenv("airbnb")
-py_module_available("ml_studio")
-ml_studio <- import('ml_studio')
 ```
 
 
@@ -64,7 +62,7 @@ import numpy as np
 import pandas as pd
 ```
 
-```{r child = '10_intro.Rmd'}
+```{r child = '20_eda.Rmd'}
 ```
 
 
