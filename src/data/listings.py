@@ -107,16 +107,22 @@ class DataSet(DataComponent):
         return df
 
     def load(self, path):
-        """Loads the dataframe from the a csv file at path.
-        
+        """Loads data.
+
         Parameters
         ----------
         path : str
-            The path to the csv file containing the data to be loaded.
+            A directory containing csv files or path to a single csv file.
+
         """
-        self._dataframe = pd.read_csv(path)
-        self._city = proper(os.path.basename(path).split("_")[1:2][0])
-        self._date = os.path.basename(path).split("_")[2:3][0]
+        if os.path.isdir(path):
+            for directory, _, filenames in os.walk(path):
+                for filename in filenames:             
+                    df = pd.read_csv(os.path.join(directory, filename), \
+                        low_memory=False)
+                    self._dataframe = pd.concat([self._dataframe, df], axis=1, sort=False)
+        else:        
+            self._dataframe = pd.read_csv(path)
 
     def save(self, path):
         """Saves the dataframe to the a csv file at path.
@@ -137,14 +143,35 @@ class DataSet(DataComponent):
             If True, the summary is printed to sys.out.
         """
         summary = {}
+        # Obtain basic statistics
         summary['Observations'] = self._dataframe.shape[0]
         summary['Variables'] = self._dataframe.shape[1]
         summary['Size (MB)'] = sum(self._dataframe.memory_usage(index=True))/1000000
+        
         # Get columns by datatype
         dtypes = self._dataframe.get_dtype_counts()
         dtypes_dict = dtypes.to_dict()
         for k, v in dtypes_dict.items():
             summary[k] = v
+
+        # Count missing values
+        counts = []
+        min_ranges = [0.000, 0.001, 0.051, 0.101, 0.251, 0.501]
+        max_ranges = [0.000, 0.050, 0.100, 0.250, 0.500, 1.000]
+
+        missing = self._dataframe.isna().sum() / self._dataframe.shape[0]
+        def count_values_in_range(series, min_range, max_range):
+            return series.between(left=min_range, right=max_range).sum()
+
+        for min_range, max_range in zip(min_ranges, max_ranges):
+            counts.append(count_values_in_range(missing, min_range, max_range))
+        
+        summary["# Columns with no Missing Values"] = counts[0]
+        summary["# Columns with 0 to 5% Missing Values"] = counts[1]
+        summary["# Columns with 5% to 10% Missing Values"] = counts[2]
+        summary["# Columns with 10% to 25% Missing Values"] = counts[3]
+        summary["# Columns with 25% to 50% Missing Values"] = counts[4]
+        summary["# Columns with more than 50% Missing Values"] = counts[5]
 
         if verbose:
             p = Printer()
@@ -152,61 +179,8 @@ class DataSet(DataComponent):
 
         return summary
 
+    def describe(self):
+        pass
 
 
-# --------------------------------------------------------------------------- #
-#                                Airbnb                                       #
-# --------------------------------------------------------------------------- #
-class Airbnb:
-    """An Airbnb listings object.
-    
-    This class loads individual dataframes, each represented in a single
-    csv file, into a single dataframe. It also provides basic summary
-    and descriptive statistics.
-    """
-
-    def __init__(self):        
-        self._dataframe =  pd.DataFrame()
-        self._summary = pd.DataFrame()
-    
-    def summarize(self):        
-        summary = {}
-        summary['Observations'] = self._dataframe.shape[0]
-        summary['Variables'] = self._dataframe.shape[1]-1 # exclude filedate col.
-        summary['Size (MB)'] = sum(self._dataframe.memory_usage(index=True))/1000000
-        # Get columns by datatype
-        dtypes = self._dataframe.get_dtype_counts()
-        dtypes_dict = dtypes.to_dict()
-        for k, v in dtypes_dict.items():
-            summary[k] = v
-        p = Printer()
-        p.print_dictionary(content=summary, title="Listings Summary")
-
-    def load(self, path):
-        """Loads data.
-
-        Parameters
-        ----------
-        path : str
-            A directory containing csv files or path to a single csv file.
-
-        """
-        for directory, _, filenames in os.walk(path):
-            for filename in filenames:
-                date = filename.split("_")[2:3][0]
-                df = pd.read_csv(os.path.join(directory, filename), \
-                    low_memory=False)
-                df['filedate'] = date
-                self._dataframe = pd.concat([self._dataframe, df], axis=1, sort=False)
-
-    def save(self, path):
-        """Loads data.
-
-        Parameters
-        ----------
-        path : str
-            A path to a single file to which the data is to be saved.
-
-        """
-        self._dataframe.to_csv(path, index=False)
 
