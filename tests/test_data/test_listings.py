@@ -32,7 +32,7 @@ class DataSetTests:
     @mark.data
     @mark.dataset    
     def test_dataset_load(self):
-        sf = "../../data/raw/san-francisco/2019/ca_san-francisco_2019-12-04_data_listings.csv.gz"
+        sf = "./data/raw/san-francisco/2019/ca_san-francisco_2019-12-04_data_listings.csv.gz"
         ds = DataSet(name='san_francisco')
         ds.load(sf)
         df = ds.get_dataframe()

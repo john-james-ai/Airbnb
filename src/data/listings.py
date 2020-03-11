@@ -84,7 +84,7 @@ class DataSet(DataComponent):
             the rows in the dataframe.
             
         """
-        df = self._dataframe()
+        df = self._dataframe
         if pct and not n:
                 n = pct/100 * df.shape[0]
         if columns:
@@ -122,7 +122,7 @@ class DataSet(DataComponent):
                         low_memory=False)
                     self._dataframe = pd.concat([self._dataframe, df], axis=1, sort=False)
         else:        
-            self._dataframe = pd.read_csv(path)
+            self._dataframe = pd.read_csv(path, low_memory=False)
 
     def save(self, path):
         """Saves the dataframe to the a csv file at path.
@@ -132,7 +132,7 @@ class DataSet(DataComponent):
         path : str
             The path to the csv file containing the data to be saved.
         """
-        self._dataframe = pd.to_csv(path)
+        self._dataframe.to_csv(path)
 
     def summarize(self, verbose=False):
         """Produces a summary of a dataframe.
