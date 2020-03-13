@@ -20,6 +20,7 @@
 # =========================================================================== #
 """ Module for creating a single listings object from multiple files.""" 
 from abc import ABC, abstractmethod
+import math
 import os
 
 import numpy as np
@@ -63,7 +64,7 @@ class DataSet(DataComponent):
         self._name = name
         self._dataframe = pd.DataFrame()
 
-    def get_dataframe(self, columns=None, n=None, pct=None, sample='head'):
+    def get_dataframe(self, columns=None, n=None, pct=None, sample=None):
         """Returns the complete or a part of a dataframe.
 
         Parameters
@@ -86,7 +87,7 @@ class DataSet(DataComponent):
         """
         df = self._dataframe
         if pct and not n:
-                n = pct/100 * df.shape[0]
+                n = math.floor(pct/100 * df.shape[0])
         if columns:
             df = df[columns]
         if sample == 'head':
@@ -149,7 +150,7 @@ class DataSet(DataComponent):
         summary['Size (MB)'] = sum(self._dataframe.memory_usage(index=True))/1000000
         
         # Get columns by datatype
-        dtypes = self._dataframe.get_dtype_counts()
+        dtypes = self._dataframe.dtypes.value_counts()
         dtypes_dict = dtypes.to_dict()
         for k, v in dtypes_dict.items():
             summary[k] = v
@@ -179,7 +180,7 @@ class DataSet(DataComponent):
 
         return summary
 
-    def describe(self):
+    def describe(self, column=None):
         pass
 
 

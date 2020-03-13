@@ -19,105 +19,110 @@
 # ============================================================================ #
 """This module contains the classes that perform univariate analyses."""
 from abc import ABC, abstractmethod
-from pathlib import Path
-import site
-PROJECT_DIR = Path(__file__).resolve().parents[1]
-site.addsitedir(PROJECT_DIR)
 
 import numpy as np
 import pandas as pd
-from scipy.stats import kurtosis, skew, shapiro
+from scipy.stats import kurtosis, skew, shapiro, kurtosistest, skewtest
 
 # ---------------------------------------------------------------------------- #
-#                             UNIVARIATE                                       #
+#                              DESCRIBE                                        #
 # ---------------------------------------------------------------------------- #
-class Univariate(ABC):
-    """Base class for all univariate subclasses.
-    
-    Parameters
-    ----------
-    dataset : DataSet
-              The DataSet object being analyzed
-    
-    """
-    _NUMERICS = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']    
-    def __init__(self):
-        self._analysis = {}
-
-    def reset(self):
-        self._analysis = {}
+class Describe(ABC):
+    """Base class for all univariate subclasses."""
 
     @abstractmethod
-    def fit(self):
-        pass
-
-    @abstractmethod
-    def get_analysis(self, attribute=None):
+    def describe(self, data):
         pass
 
 # ---------------------------------------------------------------------------- #
-#                             DESCRIBE                                         #
+#                             DESCRIBEQUANT                                    #
 # ---------------------------------------------------------------------------- #
-class Describe(Univariate):
-    """Computes descriptive statistics for a DataSet or DataCollection object.
+class DescribeQuant(Describe):
+    """Computes descriptive statistics for a quantitative variable.
 
     """
     def __init__(self):
-        super(Describe, self).__init__()
-        self._analysis = {}
+        super(DescribeQuant, self).__init__()
+        self._description = {}
         
-    def _describe_quant(self, df):
-        """Computes descriptive statistics for numeric attributes."""        
+    def describe(self, data):
+        """Computes descriptive statistics for a quantitative variable.
         
-        a = df.describe(percentiles=[.05,.1,.25,.5,.75,.9,.95],
-                        include=np.number)
-        a = a.T
-        a['na'] = df.isna().sum()
-        a['kurtosis'] = df.kurtosis(axis=0)
-        a['skew'] = df.skew(axis=0)
+        Parameters
+        ----------
+        data : array-like
+            The univariate data to be analyzed.
+
+        Returns
+        -------
+        description : dict
+            Descriptive statistics including counts, percentiles, and 
+            measures of location and scale.
+
+        """     
+        # Ensure only numeric columns are evaluated.
+        data = data.select_dtypes([np.number])
+        cols = np.array(data.columns)
+        # Compute basic descriptive statistics and round to 2 sig digits.        
+        d = data.describe(percentiles=[0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95], include=np.number)   
+        d = d.round(2)
+        d = d.T
+        # Add missing counts 
+        d_missing = data.isnull().sum()
+        d_missing = d_missing.rename('# Missing')
+        # Add missing percentages
+        d_pct_missing = round(data.isnull().sum() / len(data) * 100, 2)
+        d_pct_missing = d_pct_missing.rename('% Missing')
+        # Add Kurtosis
+        d_kurtosis = data.kurtosis()
+        d_kurtosis = d_kurtosis.rename('Kurtosis')
+        # Add Skew
+        d_skew = data.skew()
+        d_skew = d_skew.rename('skew')
+        # Concatenate pandas objects into dataframe
+        d = pd.concat([d, d_missing, d_pct_missing, d_kurtosis, d_skew], axis=1)
+        # Add Kurtosis test
+        _, d_kurtosis_test = kurtosistest(data)
+        d['Kurtosis p-value'] = pd.DataFrame(data=[d_kurtosis_test], columns=cols).T
+        # Add Skew test
+        _, d_skew_test = skewtest(data)
+        d['Skew p-value'] = pd.DataFrame(data=[d_skew_test], columns=cols).T
+        # Add shapiro
+        df = data.apply(lambda x: pd.Series(shapiro(x), index=['w', 'Shapiro p-value'])).T
+        d = pd.concat([d, df['Shapiro p-value']], axis=1)
+        return d
+
+
+# ---------------------------------------------------------------------------- #
+#                             DESCRIBEQUANT                                    #
+# ---------------------------------------------------------------------------- #
+class DescribeQual(Describe):
+    """Computes descriptive statistics for a qualitative variable.
+
+    """
+    def __init__(self):
+        super(DescribeQual, self).__init__()
+        self._description = {}
         
-        a = a[['count', 'na', 'min', '5%', '10%', '25%', '50%', 'mean', 
-               '75%', '90%', '95%', 'max', 'std', 'kurtosis', 'skew']]
+    def describe(self, data):
+        """Computes descriptive statistics for a qualitative variable.
         
-        return a
+        Parameters
+        ----------
+        data : array-like
+            The univariate data to be analyzed.
 
-    def _describe_qual(self, df):
-        """Computes descriptive statistics for qualitative variables."""
-        
-        a = df.describe(include=np.object)
-        a = a.T
-        a['na'] = df.isnull().sum().T
-        a = a[['count', 'na', 'unique', 'top', 'freq']]
-        return a
+        Returns
+        -------
+        description : dict
+            Descriptive statistics including counts, missing and unique 
+            values.
 
-    def fit(self, data):
-        """Fits the analysis to the DataFrame or DataSet object."""            
-        
-        # Obtain the data from the DataSet or DataCollection
-        if isinstance(data, pd.DataFrame):
-            df = data
-        else:
-            df = data.get_data()
-        
-        # Analyze numerics   
-        quant_analysis = self._describe_quant(df)
-
-        # Analyze categoricals
-        qual_analysis = self._describe_qual(df)
-
-        # Package results
-        self._analysis['quant'] = quant_analysis
-        self._analysis['qual'] = qual_analysis
-
-        return self
-    
-    def get_analysis(self):
-        """Returns the analysis from the fit method."""
-        return self._analysis
-
-      
-
-
+        """        
+        d = data.select_dtypes(exclude=[np.number])
+        d = data.describe()
+        d = d.to_dict()
+        return d
                 
 
 

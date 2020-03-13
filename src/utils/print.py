@@ -56,8 +56,8 @@ class Printer:
         anchor = self._compute_budgets(anchor)    
 
         # Get line lengths from content
-        lhs_lens = [len(k) for k in content.keys()]
-        rhs_lens = [len(v) for v in content.values()]    
+        lhs_lens = [len(str(k)) for k in content.keys()]
+        rhs_lens = [len(str(v)) for v in content.values()]    
 
         # If all lengths are within budget return self._anchor_pos
         if max(lhs_lens) <= anchor['lhs_budget'] and \
@@ -67,7 +67,7 @@ class Printer:
         # Otherwise adjust anchor by 1/2 (avg_rhs - avg_lhs)
         lhs_avg_len = statistics.mean(lhs_lens)
         rhs_avg_len = statistics.mean(rhs_lens)
-        anchor['pos'] -= 1/2 * (rhs_avg_len - lhs_avg_len)
+        anchor['pos'] -= math.floor(1/2 * (rhs_avg_len - lhs_avg_len))
         # Adjust the budgets for lhs and rhs accordingly
         anchor = self._compute_budgets(anchor)
 
@@ -84,9 +84,9 @@ class Printer:
         print(title_separator.center(self._line_length))
 
     def _print_line(self, anchor, k, v):
-        lhs_pad = ' ' * (anchor['pos'] - anchor['lhs_pad'] - len(k))
-        line = lhs_pad + k + ' '*anchor['lhs_pad'] + anchor['style'] + \
-            ' '*anchor['rhs_pad'] + v
+        lhs_pad = ' ' * (anchor['pos'] - anchor['lhs_pad'] - len(str(k)))
+        line = lhs_pad + str(k) + ' '*anchor['lhs_pad'] + anchor['style'] + \
+            ' '*anchor['rhs_pad'] + str(v)
         print(line)
 
 

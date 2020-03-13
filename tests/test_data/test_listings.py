@@ -47,3 +47,21 @@ class DataSetTests:
         filename = "./tests/data/san_francisco_export.csv.gz"
         ds.save(filename)
         assert os.path.exists(filename), "DataSet export failed"
+
+    @mark.data
+    @mark.dataset
+    @mark.get_dataframe
+    def test_dataset_get(self, get_dataset):
+        ds = get_dataset
+        df = ds.get_dataframe(n=10)
+        assert df.shape[0] == 10, "get_dataset invalid rows; n=10, head"
+        assert df.shape[1] == 106, "get_dataset invalid cols; n=10, head"
+        df = ds.get_dataframe(pct=10)
+        assert df.shape[0] > 800, "get_dataset invalid rows; pct=10, head"
+        assert df.shape[1] == 106, "get_dataset invalid cols; pct=10, head"
+        columns = ['id', 'listing_url', 'scrape_id', 'last_scraped', 'name']
+        df = ds.get_dataframe(columns=columns, pct=10)
+        assert df.shape[0] > 800, "get_dataset invalid rows; pct=10, head"
+        assert df.shape[1] == 5, "get_dataset invalid cols; pct=10, head"
+        summary = ds.summarize(verbose=False)
+        assert isinstance(summary, dict), "Summary is not a dictionary"
