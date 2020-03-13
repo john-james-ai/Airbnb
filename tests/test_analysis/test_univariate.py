@@ -31,7 +31,7 @@ class DescribeTests:
     @mark.analysis_univariate    
     def test_describe_quant(self, get_dataset):
         ds = get_dataset
-        data = ds.get_dataframe()
+        data = ds.get_data()
         d = DescribeQuant()
         print(d.describe(data))
 
@@ -39,6 +39,6 @@ class DescribeTests:
     @mark.analysis_univariate  
     def test_describe_qual(self, get_dataset):
         ds = get_dataset
-        data = ds.get_dataframe()
+        data = ds.get_data()
         d = DescribeQual()
         print(d.describe(data))        

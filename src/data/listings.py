@@ -26,6 +26,7 @@ import os
 import numpy as np
 import pandas as pd
 
+from ..analysis.univariate import DescribeQual, DescribeQuant
 from ..utils.print import Printer
 from ..utils.format import proper
 # --------------------------------------------------------------------------- #
@@ -35,7 +36,7 @@ class DataComponent(ABC):
     """Abstract base class for DataSet and DataGroup classes."""
 
     @abstractmethod
-    def get_dataframe(self, **kwargs):
+    def get_data(self, **kwargs):
         pass
 
     @abstractmethod
@@ -51,20 +52,73 @@ class DataComponent(ABC):
         pass
 
     @abstractmethod
-    def describe(self):
+    def describe(self, columns=None, verbose=False):
         pass
 
 # --------------------------------------------------------------------------- #
 #                                DataSet                                      #
 # --------------------------------------------------------------------------- #
 class DataSet(DataComponent):
-    """ Encapsulates a DataFrame object with summary and descriptive statistics."""
+    """ Encapsulates a DataFrame object with summary and descriptive statistics.
 
-    def __init__(self, name):
-        self._name = name
+    Parameters
+    ----------
+    path : str
+        The relative path to the underlying data on disk.
+    name : str
+        A unique string which identifies the DataSet object.
+
+    Attributes
+    ----------
+    name : str
+        If the name is not provided, it is set to the date extracted from the 
+        source path.  If there is no date in the source path, the name is set 
+        to the basename of the source path. The name of the DataSet object is used 
+        as the key in the DataGroup object, as such the name, once assigned, 
+        is immutable.
+    source : str
+        The relative path to the source of the underlying data on disk. 
+    target : str
+        The relative path to which the dataframe is saved on disk. 
+    islocked : boolean
+        True if the source of the data is locked. If the islocked attribute 
+        is True, the source is immutable.
+
+    
+    """
+
+    def __init__(self, path, name=None):
+        self._name = name or path.split("_")[2:3][0] or os.path.basename(path)
+        self._source = path
+        self._target = None
+        self._islocked = True
         self._dataframe = pd.DataFrame()
 
-    def get_dataframe(self, columns=None, n=None, pct=None, sample=None):
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def source(self):
+        return self._source
+
+    @property
+    def target(self):
+        return self._target
+
+    @property
+    def islocked(self):
+        return self._islocked
+
+    @property
+    def lock(self):
+        self._islocked = True
+
+    @property
+    def unlock(self):
+        self._islocked = False        
+
+    def get_data(self, columns=None, n=None, pct=None, sample=None):
         """Returns the complete or a part of a dataframe.
 
         Parameters
@@ -85,6 +139,9 @@ class DataSet(DataComponent):
             the rows in the dataframe.
             
         """
+        if self._dataframe.empty:
+            raise Exception("DataSet is empty. Run load method on DataSet object.")
+
         df = self._dataframe
         if pct and not n:
                 n = math.floor(pct/100 * df.shape[0])
@@ -107,33 +164,60 @@ class DataSet(DataComponent):
                 df = df.sample(5)
         return df
 
-    def load(self, path):
-        """Loads data.
-
-        Parameters
-        ----------
-        path : str
-            A directory containing csv files or path to a single csv file.
-
+    def load(self):
+        """Loads data from the source path.
+        
+        This method can load data from one or multiple csv files into a single
+        DataFrame object. If the source parameter is a directory, all data from the 
+        underlying files will be loaded into a single DataFrame. Otherwise, the
+        DataFrame will contain the data from a single csv file.  
+        
         """
-        if os.path.isdir(path):
-            for directory, _, filenames in os.walk(path):
+        if os.path.isdir(self._source):
+            for directory, _, filenames in os.walk(self._source):
                 for filename in filenames:             
                     df = pd.read_csv(os.path.join(directory, filename), \
                         low_memory=False)
                     self._dataframe = pd.concat([self._dataframe, df], axis=1, sort=False)
         else:        
-            self._dataframe = pd.read_csv(path, low_memory=False)
+            self._dataframe = pd.read_csv(self._source, low_memory=False)
 
-    def save(self, path):
-        """Saves the dataframe to the a csv file at path.
-        
+        return self
+
+    def save(self, path=None):
+        """Saves the dataframe to the a csv file at path.        
+                
         Parameters
         ----------
-        path : str
-            The path to the csv file containing the data to be saved.
+        path : str (Optional)
+            The path to the csv file containing the data to be saved. If not
+            provided, the file is saved to the path indicated by the source
+            attribute if islocked is False.
+
+        Raises
+        ------
+        LockedFileException if islocked is True and path is equal to source.
+
+        Note
+        ----
+        This method also assigns the path parameter to the target attribute. 
         """
-        self._dataframe.to_csv(path)
+
+        if path:
+            if self._islocked and self._source == path:
+               raise Exception("'{path}' is locked.".format(path=path))    
+            else:
+                self._dataframe.to_csv(path)
+                self._target = path
+        else:
+            if self._islocked:
+                raise Exception("The source file path is locked. Designate an\
+                    alternative location or unlock the source file.")    
+            else:
+                self._dataframe.to_csv(self._source)
+                self._target = self._source
+
+        return self
 
     def summarize(self, verbose=False):
         """Produces a summary of a dataframe.
@@ -143,6 +227,9 @@ class DataSet(DataComponent):
         verbose : bool
             If True, the summary is printed to sys.out.
         """
+        if self._dataframe.empty:
+            raise Exception("DataSet is empty. Run load method on DataSet object.")
+
         summary = {}
         # Obtain basic statistics
         summary['Observations'] = self._dataframe.shape[0]
@@ -180,8 +267,178 @@ class DataSet(DataComponent):
 
         return summary
 
-    def describe(self, column=None):
-        pass
+    def describe(self, columns=None, verbose=False):
+        """Descriptive statistics for quantitative and qualitative variables.""" 
+        if self._dataframe.empty:
+            raise Exception("DataSet is empty. Run load method on DataSet object.")
+
+        description = {}
+
+        if columns:
+            if np.issubdtype(self._dataframe[columns], np.number):
+                d = DescribeQuant()
+                description['quant'] = d.describe(self._dataframe[columns])
+            else:
+                d = DescribeQual()
+                description['qual'] = d.describe(self._dataframe[columns])
+
+        else:
+            d = DescribeQuant()
+            description['quant'] = d.describe(self._dataframe)            
+            d = DescribeQual()
+            description['qual'] = d.describe(self._dataframe)            
+        
+        return description
+
+# --------------------------------------------------------------------------- #
+#                                DataGroup                                    #
+# --------------------------------------------------------------------------- #
+class DataGroup(DataComponent):
+
+    def __init__(self, name):
+        self._name = name
+        self._datagroup = {}
+
+    def get_data(self, names=None):
+        """Returns a dictionary containing DataSet objects.
+
+        Parameters
+        ----------
+        names : str or list-like
+            The name or names of the underlying DataSet objects to return.
+
+        Raises
+        ------
+        Exception if the DataGroup object is empty.
+
+        """
+        if len(self._datagroup) == 0:
+            raise Exception("DataSet is empty.")
+
+        if names:       
+            try:            
+                return self._datagroup[names]
+            except KeyError as e: 
+                print(e)
+
+        else:
+            return self._datagroup
+
+    def load(self, names=None):
+        """Loads the named (or all) contained DataSet objects.
+
+        Parameters
+        ----------
+        names : str or list-like
+            The name or names of the underlying DataSet objects to load.
+
+        Raises
+        ------
+        Exception if the DataGroup object is empty.
+
+        """        
+        if len(self._datagroup) == 0:
+            raise Exception("DataSet is empty. Run load method on DataSet object.")
+
+        for name, dataset in self._datagroup.items():
+            self._datagroup[name] = dataset.load()
+
+    def save(self):
+        """Saves enclosed DataSet objects to target locations."""
+        
+        for dataset in self._datagroup.values():
+            dataset.save()            
+
+    def add_dataset(self, dataset):
+        """Adds a DataSet object to the DataGroup.
+        
+        Parameters
+        ----------
+        dataset : DataSet
+            The DataSet object to add to the DataGroup object.
+
+        Raises
+        ------
+        KeyError if DataSet object of same name exists in DataGroup object.
+
+        """
+        name = dataset.name
+
+        if name in self._datagroup.keys():
+            raise KeyError("A DataSet object '{name}' already exists in the \
+                DataGroup".format(name=name))
+        self._datagroup[name] = dataset
+
+        return self
+
+    def add_dataset_from_path(self, path):
+        """Adds DataSet objects from files located at path.
+
+        If path is a directory, DataSet objects are created, loaded from the
+        path directory and stored in the DataGroup object. Otherwise, if
+        the path is a directory to a single file, a single DataSet object
+        is created, loaded and added. 
+
+        Parameters
+        ----------
+        path : str
+            A relative directory containing csv files or a path to a single
+            file.
+
+        """
+
+        if os.path.isdir(path):
+            for directory, _, filenames in os.walk(path):
+                for filename in filenames:                     
+                    d = DataSet(os.path.join(directory, filename))
+                    ds = d.load() 
+                    self._datagroup[name] = ds
+        else:
+            d = DataSet(path)
+            ds = d.load() 
+            self._datagroup[name] = ds     
+
+    def change_dataset(self, dataset):
+        """Replaces a dataset object of same name with the passed dataset.
+
+        This method is designed to allow a DataSet object with the same name
+        as a new DataSet object to be overwritten by the new DataSet object.
+        If no DataSet object of the same name exists, the 'add_dataset' method
+        is invoked.
+
+        Parameters
+        ----------
+        dataset : DataSet
+            The new DataSet object to replace an existing DataSet object of 
+            the same name.
+
+        """
+        if dataset.name in self._datagroup.keys():
+            self._datagroup[dataset.name] = dataset
+        else:
+            self._add_dataset(dataset)
+
+    def remove_dataset(self, dataset):
+        """Removes a dataset from the DataGroup object.
+
+        Parameters
+        ----------
+        dataset : DataSet object
+            The DataSet object to be removed.
+
+        Raises
+        ------
+        KeyError if the DataSet object doesn't exist in the DataGroup object.
+
+        """
+        try:
+            del self._datagroup[dataset.name]
+        except KeyError as e:
+            print(e)
+
+ 
+           
+
 
 
 

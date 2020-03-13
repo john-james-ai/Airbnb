@@ -1498,22 +1498,28 @@ div.tocify {
 
 <h1 class="title toc-ignore">Airbnb Analysis and Predictive Analytics</h1>
 <h4 class="author">John James <a href="mailto:jjames@DecisionScients.com" class="email">jjames@DecisionScients.com</a></h4>
-<h4 class="date">08 March, 2020</h4>
+<h4 class="date">13 March, 2020</h4>
 
 </div>
 
 
 <div id="exploratory-data-analysis" class="section level1">
 <h1>Exploratory Data Analysis</h1>
+<p>This exploratory data analysis (EDA) will be conducted on a training set containing listings data from the San Francisco market for the 48 months between December 2, 2015 and December 4th, 2019. We’ll begin by summarizing the datasets that will be used in the study and reviewing the codebook to determine variables to include or exclude. The core elements of the EDA will then include:</p>
+<ul>
+<li>Univariate analysis including descriptive statistics of the study variables<br />
+</li>
+<li>Bivariate analysis using tabular and graphical techniques<br />
+</li>
+<li>Multivariate analysis illuminating the relationship among three or more variables.</li>
+</ul>
 <div id="summary-of-listings-data" class="section level2">
 <h2>Summary of Listings Data</h2>
+<p>The following summarizes the 48 listings datasets from the San Francisco market from December 2015 through December 2019.</p>
 <a href="#eda_summary">Table 1</a>: San Francisco Listings Summary
 <table class="table table-striped table-hover table-condensed" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
-<th style="text-align:right;">
-Unnamed: 0
-</th>
 <th style="text-align:left;">
 City
 </th>
@@ -1533,9 +1539,6 @@ Size (MB)
 </thead>
 <tbody>
 <tr>
-<td style="text-align:right;">
-0
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1553,9 +1556,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-1
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1573,9 +1573,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-2
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1593,9 +1590,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-3
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1613,9 +1607,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-4
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1633,9 +1624,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-5
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1653,9 +1641,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-6
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1673,9 +1658,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-7
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1693,9 +1675,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-8
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1713,9 +1692,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-9
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1733,9 +1709,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-10
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1753,9 +1726,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-11
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1773,9 +1743,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-12
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1793,9 +1760,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-13
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1813,9 +1777,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-14
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1833,9 +1794,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-15
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1853,9 +1811,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-16
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1873,9 +1828,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-17
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1893,9 +1845,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-18
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1913,9 +1862,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-19
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1933,9 +1879,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-20
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1953,9 +1896,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-21
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1973,9 +1913,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-22
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -1993,9 +1930,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-23
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2013,9 +1947,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-24
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2033,9 +1964,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-25
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2053,9 +1981,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-26
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2073,9 +1998,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-27
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2093,9 +2015,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-28
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2113,9 +2032,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-29
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2133,9 +2049,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-30
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2153,9 +2066,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-31
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2173,9 +2083,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-32
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2193,9 +2100,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-33
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2213,9 +2117,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-34
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2233,9 +2134,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-35
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2253,9 +2151,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-36
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2273,9 +2168,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-37
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2293,9 +2185,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-38
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2313,9 +2202,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-39
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2333,9 +2219,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-40
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2353,9 +2236,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-41
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2373,9 +2253,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-42
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2393,9 +2270,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-43
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2413,9 +2287,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-44
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2433,9 +2304,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-45
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2453,9 +2321,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-46
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>
@@ -2473,9 +2338,6 @@ san-francisco
 </td>
 </tr>
 <tr>
-<td style="text-align:right;">
-47
-</td>
 <td style="text-align:left;">
 san-francisco
 </td>

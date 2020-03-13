@@ -35,7 +35,7 @@ class DataSetTests:
         sf = "./data/raw/san-francisco/2019/ca_san-francisco_2019-12-04_data_listings.csv.gz"
         ds = DataSet(name='san_francisco')
         ds.load(sf)
-        df = ds.get_dataframe()
+        df = ds.get_data()
         assert len(df) > 0, "DataSet load failed"
 
     @mark.data
@@ -50,17 +50,17 @@ class DataSetTests:
 
     @mark.data
     @mark.dataset
-    @mark.get_dataframe
+    @mark.get_data
     def test_dataset_get(self, get_dataset):
         ds = get_dataset
-        df = ds.get_dataframe(n=10)
+        df = ds.get_data(n=10)
         assert df.shape[0] == 10, "get_dataset invalid rows; n=10, head"
         assert df.shape[1] == 106, "get_dataset invalid cols; n=10, head"
-        df = ds.get_dataframe(pct=10)
+        df = ds.get_data(pct=10)
         assert df.shape[0] > 800, "get_dataset invalid rows; pct=10, head"
         assert df.shape[1] == 106, "get_dataset invalid cols; pct=10, head"
         columns = ['id', 'listing_url', 'scrape_id', 'last_scraped', 'name']
-        df = ds.get_dataframe(columns=columns, pct=10)
+        df = ds.get_data(columns=columns, pct=10)
         assert df.shape[0] > 800, "get_dataset invalid rows; pct=10, head"
         assert df.shape[1] == 5, "get_dataset invalid cols; pct=10, head"
         summary = ds.summarize(verbose=False)

@@ -39,3 +39,4 @@ In 2014, investors like Fred Wilson, co-founder of Union Square Ventures, were r
 
 Airbnb reached profitability in 2016, in which revenue grew by more than 80%. Today, Airbnb has over 150M users and over 2M guests per night. Global listings exceed 6M and there are over 650,000 hosts worldwide generating over \$100M in annual profit. The current global valuation is over $35B.
 
+The purpose of this undertaking is to explore the factors that have the greatest effect on average daily earnings (ADE) for the San Francisco market and to develop a model to predict ADE. Forty-eight months of listings data, starting December 2nd, 2015 and extending through December 4th, 2019, will be partitioned into a training, validation and test sets. Our exploratory data analysis will be confined to the training set. The validation set will be used to tune hyperparameters and final model performance will be evaluated on the test set.

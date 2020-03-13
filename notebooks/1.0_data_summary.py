@@ -50,7 +50,7 @@ def summarize(root):
             df = pd.read_csv(os.path.join(path, name), low_memory=False)            
             rows.append(df.shape[0])
             cols.append(df.shape[1])
-            size.append(sum(df.memory_usage(index=True))/1000000)
+            size.append(round(sum(df.memory_usage(index=True))/1000000),2)
 
             columns[name.split("_")[2:3][0]] = np.in1d(df_base.columns.tolist(), df.columns.tolist())
 
