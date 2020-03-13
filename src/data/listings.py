@@ -87,10 +87,10 @@ class DataSet(DataComponent):
     
     """
 
-    def __init__(self, path, name=None):
+    def __init__(self, path, name=None):        
         self._name = name or path.split("_")[2:3][0] or os.path.basename(path)
         self._source = path
-        self._target = None
+        self._target = path
         self._islocked = True
         self._dataframe = pd.DataFrame()
 
@@ -118,7 +118,7 @@ class DataSet(DataComponent):
     def unlock(self):
         self._islocked = False        
 
-    def get_data(self, columns=None, n=None, pct=None, sample=None):
+    def get_data(self, columns=None, n=None, pct=None, sample=None, seed=None):
         """Returns the complete or a part of a dataframe.
 
         Parameters
@@ -137,6 +137,8 @@ class DataSet(DataComponent):
             'random' returns random sampling of n (or pct) rows. If n and
             pct are None, this returns a random sampling of 5% of 
             the rows in the dataframe.
+        seed : None or integer
+            Sets seed for pseudorandom sampling repeatability
             
         """
         if self._dataframe.empty:
@@ -159,9 +161,9 @@ class DataSet(DataComponent):
                 df = df.tail(5)                
         elif sample == 'random':
             if n:
-                df = df.sample(n)
+                df = df.sample(n, random_state=seed)
             else:
-                df = df.sample(5)
+                df = df.sample(frac=.05, random_state=seed)
         return df
 
     def load(self):
@@ -172,7 +174,7 @@ class DataSet(DataComponent):
         underlying files will be loaded into a single DataFrame. Otherwise, the
         DataFrame will contain the data from a single csv file.  
         
-        """
+        """        
         if os.path.isdir(self._source):
             for directory, _, filenames in os.walk(self._source):
                 for filename in filenames:             
@@ -267,26 +269,23 @@ class DataSet(DataComponent):
 
         return summary
 
-    def describe(self, columns=None, verbose=False):
+    def describe(self, columns=None):
         """Descriptive statistics for quantitative and qualitative variables.""" 
         if self._dataframe.empty:
             raise Exception("DataSet is empty. Run load method on DataSet object.")
 
         description = {}
+        description['quant'] = None
+        description['qual'] = None
 
         if columns:
-            if np.issubdtype(self._dataframe[columns], np.number):
-                d = DescribeQuant()
-                description['quant'] = d.describe(self._dataframe[columns])
-            else:
-                d = DescribeQual()
-                description['qual'] = d.describe(self._dataframe[columns])
-
+            df = self._dataframe[columns]
         else:
-            d = DescribeQuant()
-            description['quant'] = d.describe(self._dataframe)            
-            d = DescribeQual()
-            description['qual'] = d.describe(self._dataframe)            
+            df = self._dataframe
+        d = DescribeQuant()
+        description['quant'] = d.describe(df)            
+        d = DescribeQual()
+        description['qual'] = d.describe(df)            
         
         return description
 

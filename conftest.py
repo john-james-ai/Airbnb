@@ -26,8 +26,8 @@ from .src.data.listings import DataSet
 @fixture(scope="session")
 def get_dataset():
     sf = "./data/raw/san-francisco/2019/ca_san-francisco_2019-12-04_data_listings.csv.gz"
-    ds = DataSet(name='san_francisco')
-    ds.load(sf)
+    ds = DataSet(sf)
+    ds.load()
     return ds
 
 
