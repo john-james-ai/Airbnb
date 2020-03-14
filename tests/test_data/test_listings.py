@@ -21,6 +21,7 @@
 
 """Tests Listing classes."""
 import os
+import shutil
 import pandas as pd
 from pytest import mark, raises
 from ...src.data.listings import DataSet, DataGroup 
@@ -59,20 +60,30 @@ class DataSetTests:
 
     @mark.data
     @mark.dataset    
-    def test_dataset_save(self):
-        path = "./data/raw/san-francisco/2019/ca_san-francisco_2019-12-04_data_listings.csv.gz"
-        target = "./tests/data/test_dataset_save.csv"
-        ds = DataSet(path)
-        ds.load()
-        with raises(Exception):
+    def test_dataset_save(self, get_dataset):
+        ds = get_dataset
+        # Test without a path. 
+        with raises(Exception):            
             ds.save()
-        ds.save(target)
-        assert os.path.exists(target), "DataSet save to new target not working."
-        ds = DataSet(target)
-        os.remove(target)
         ds.unlock
-        ds.save()
-        assert os.path.exists(target), "DataSet save to unlocked same source not working."
+        ds.save
+        # Test with new path as directory
+        path = "./tests/data/"
+        newpath = os.path.join(path, os.path.basename(ds.target))
+        ds.save(path)
+        assert os.path.exists(newpath), "New file not created or incorrect filename"
+        source = ds.source
+        target = ds.target
+        assert target == newpath, "Target not updated"
+        assert source != target, "Target equals source"
+        # Test witih new path as filepath
+        path = "./tests/data/test_dataset_save_II.csv"
+        ds.save(path)
+        source = ds.source
+        target = ds.target
+        assert target == path, "Target not updated"
+        assert source != target, "Target equals source"
+        assert os.path.exists(path), "New file not created or incorrect filename"
         
 
     @mark.data
@@ -133,3 +144,133 @@ class DataSetTests:
         print("**************************************")
         print(description['qual'])
     
+
+# --------------------------------------------------------------------------- #
+#                             Test DataGroup                                  #
+# --------------------------------------------------------------------------- #
+class DataGroupTests:
+    """Tests DataGroup Class"""
+
+    @mark.data
+    @mark.datagroup    
+    def test_datagroup_init(self):    
+        name = 'san-francisco'
+        dg = DataGroup(name=name) 
+        dg_name = dg.name
+        locked = dg.islocked
+        assert name == dg_name, "Name not initialized."
+        assert locked is False, "Locked is not initialized."
+        dg.lock
+        locked = dg.islocked
+        assert locked is True, "Not locked."
+        dg.unlock
+        locked = dg.islocked
+        assert locked is False, "Not unlocked."
+
+    @mark.data
+    @mark.datagroup    
+    def test_datagroup_add_dataset_from_path(self): 
+        # Load single dataset from path
+        path = "./data/raw/san-francisco/2019/ca_san-francisco_2019-12-04_data_listings.csv.gz"
+        name = 'san-francisco_2019-12-04'
+        dg = DataGroup(name=name) 
+        dg = dg.add_dataset_from_path(path)
+        # Get specified single dataset
+        dict_of_datasets = dg.get_data(names=['2019-12-04'])
+        assert isinstance(dict_of_datasets['2019-12-04'], DataSet), "get_data failed to return dict containing dataset"
+        for k, v in dict_of_datasets.items():
+            df = v.get_data()
+            assert df.shape[0] > 8000, "Failed to return dataframe of >8000 rows"
+            assert df.shape[1] == 106, "Failed to return dataframe of 106 columns"
+
+    @mark.data
+    @mark.datagroup    
+    def test_datagroup_add_multiple_datasets_from_path(self): 
+        # Load single dataset from path
+        path = "./data/raw/san-francisco/2019/"
+        name = 'san-francisco_2019'        
+        dg = DataGroup(name=name) 
+        dg = dg.add_dataset_from_path(path)
+        dict_of_datasets = dg.get_data(names=['2019-12-04', '2019-10-14'])
+        assert isinstance(dict_of_datasets['2019-12-04'], DataSet), "get_data failed to return dict containing dataset"
+        assert isinstance(dict_of_datasets['2019-10-14'], DataSet), "get_data failed to return dict containing dataset"
+        for k, v in dict_of_datasets.items():
+            df = v.get_data()
+            assert df.shape[0] > 8000, "Failed to return dataframe of >8000 rows"
+            assert df.shape[1] == 106, "Failed to return dataframe of 106 columns"
+        dict_of_datasets = dg.get_data()
+        assert len(dict_of_datasets) == 12, "Failed to return all dataset objects."
+
+    @mark.data
+    @mark.datagroup    
+    def test_datagroup_add_dataset(self, get_dataset): 
+        ds = get_dataset
+        dg = DataGroup(name='san-fran') 
+        dg = dg.add_dataset(ds)
+        # Check for single dataset by name
+        dict_of_datasets = dg.get_data(names=['2019-12-04'])
+        assert isinstance(dict_of_datasets['2019-12-04'], DataSet), "get_data failed to return dict containing dataset"
+        # Check for single dataset by default
+        dict_of_datasets = dg.get_data()
+        for k, v in dict_of_datasets.items():
+            df = v.get_data()
+            assert df.shape[0] > 8000, "Failed to return dataframe of >8000 rows"
+            assert df.shape[1] == 106, "Failed to return dataframe of 106 columns"        
+        assert len(dict_of_datasets) == 1, "Failed to return all dataset objects."        
+
+    @mark.data
+    @mark.datagroup    
+    def test_datagroup_locking(self):    
+        name = 'san-francisco_2019'
+        path = "./data/raw/san-francisco/2019/"
+        dg = DataGroup(name=name)
+        dg.add_dataset_from_path(path)
+        # Test unlocking of all DataSet objects
+        dg.unlock_datasets()
+        ds = dg.get_data()
+        for name, dataset in ds.items():
+            locked = dataset.islocked
+            assert locked is False, "Failed to unlock all enclosed DataSet objects."
+        # Test locking of all DataSet objects
+        dg.lock_datasets()
+        ds = dg.get_data()
+        for name, dataset in ds.items():
+            locked = dataset.islocked
+            assert locked is True, "Failed to lock all enclosed DataSet objects."
+        # Test unlocking named DataSet objects
+        names = names=['2019-10-14', '2019-12-04']
+        dg.unlock_datasets(names=names)
+        ds = dg.get_data()
+        for name, dataset in ds.items():
+            locked = dataset.islocked
+            if name in names:
+                assert locked is False, "Failed to unlock all enclosed DataSet objects."            
+            else:
+                assert locked is True, "Failed to leave unnamed objects locked."  
+        # Test locking named DataSets
+        dg.lock_datasets(names=names)
+        ds = dg.get_data()
+        for name, dataset in ds.items():
+            locked = dataset.islocked
+            assert locked is True, "Failed to lock all enclosed DataSet objects."        
+                  
+    @mark.data
+    @mark.datagroup    
+    def test_datagroup_save(self):    
+        name = 'san-francisco_2019'        
+        path = "./data/raw/san-francisco/2019/"
+        dg = DataGroup(name=name)
+        dg.add_dataset_from_path(path)
+        # Attempt to save without path parameter
+        # should fail since items are locked
+        with raises(Exception):
+            dg.save()
+        # Attempt to save with new path parameter, should be goodtogo
+        path = "./tests/data/test_save_datagroup/"
+        dg.save(path)
+        ds = dg.get_data()
+        for name, dataset in ds.items():
+            target = dataset.target
+            assert str(os.path.dirname(target)+"/") == path, "Target not updated to new location"
+            assert os.path.exists(target), "DataSet objects not saved to correct location"
+        shutil.rmtree(path)

@@ -47,14 +47,21 @@ class DataComponent(ABC):
     def save(self, path):
         pass
 
-    @abstractmethod
-    def summarize(self):
-        pass
+    @property
+    def name(self):
+        return self._name
 
-    @abstractmethod
-    def describe(self, columns=None, verbose=False):
-        pass
+    @property
+    def islocked(self):
+        return self._islocked
 
+    @property
+    def lock(self):
+        self._islocked = True
+
+    @property
+    def unlock(self):
+        self._islocked = False    
 # --------------------------------------------------------------------------- #
 #                                DataSet                                      #
 # --------------------------------------------------------------------------- #
@@ -95,28 +102,13 @@ class DataSet(DataComponent):
         self._dataframe = pd.DataFrame()
 
     @property
-    def name(self):
-        return self._name
-
-    @property
     def source(self):
         return self._source
 
     @property
     def target(self):
         return self._target
-
-    @property
-    def islocked(self):
-        return self._islocked
-
-    @property
-    def lock(self):
-        self._islocked = True
-
-    @property
-    def unlock(self):
-        self._islocked = False        
+      
 
     def get_data(self, columns=None, n=None, pct=None, sample=None, seed=None):
         """Returns the complete or a part of a dataframe.
@@ -186,38 +178,56 @@ class DataSet(DataComponent):
 
         return self
 
-    def save(self, path=None):
-        """Saves the dataframe to the a csv file at path.        
+    def save(self, path=None, **kwargs):
+        """Saves the dataframe to the a csv file.        
+
+        This method accepts a path parameter which may be a directory or a
+        relative path including a filename. The DataSet object will also have a 
+        source and target file location. The name and location to which the
+        file is saved depends upon the path parameter and the current target
+        value.
+
+        The path may be a directory or a file path including a filename. If
+        the path is a directory, the current target filename is appended to
+        the path and the data is saved at that location. Otherwise, the
+        data is saved at the filepath designated by the path parameter.
+
+        If there is no path parameter, the data is saved to the current
+        target location.
                 
         Parameters
         ----------
         path : str (Optional)
-            The path to the csv file containing the data to be saved. If not
-            provided, the file is saved to the path indicated by the source
-            attribute if islocked is False.
+            A directory or filename to which the data is to be saved.
 
         Raises
         ------
-        LockedFileException if islocked is True and path is equal to source.
+        Exception if islocked is True and path is equal to source.
 
         Note
         ----
-        This method also assigns the path parameter to the target attribute. 
+        Once the file is saved, the target location is updated to reflect the 
+        new location.
         """
 
+        source_dir = os.path.dirname(self._source)
+        source_filename = os.path.basename(self._source)
+
         if path:
-            if self._islocked and self._source == path:
+            if self._islocked and (self._source == path or source_dir == path):
                raise Exception("'{path}' is locked.".format(path=path))    
+            elif os.path.isdir(path):
+                self._dataframe.to_csv(os.path.join(path, source_filename))
+                self._target = os.path.join(path, source_filename)
             else:
                 self._dataframe.to_csv(path)
                 self._target = path
         else:
-            if self._islocked:
+            if self._islocked and (self._target == self._source):
                 raise Exception("The source file path is locked. Designate an\
                     alternative location or unlock the source file.")    
             else:
-                self._dataframe.to_csv(self._source)
-                self._target = self._source
+                self._dataframe.to_csv(self._target)                
 
         return self
 
@@ -296,14 +306,62 @@ class DataGroup(DataComponent):
 
     def __init__(self, name):
         self._name = name
+        self._islocked = False
         self._datagroup = {}
 
-    def get_data(self, names=None):
-        """Returns a dictionary containing DataSet objects.
+    def lock_datasets(self, names=None):
+        """Locks the enclosed (or named) DataSet objects.
 
         Parameters
         ----------
-        names : str or list-like
+        names : list-like
+            The names of the DataSet objects to lock.
+
+        """
+        if names:
+            for name in names:
+                try:
+                    self._datagroup[name].lock
+                except KeyError:
+                    print("DataSet named '{name}' does not exist\
+                        in the DataGroup".format(name=name))
+        else:
+            for name in self._datagroup.keys():
+                self._datagroup[name].lock
+        
+        return self
+
+    def unlock_datasets(self, names=None):
+        """Unlocks the enclosed (or named) DataSet objects.
+
+        Parameters
+        ----------
+        names : list-like
+            The names of the DataSet objects to unlock.
+
+        """
+        if names:
+            for name in names:
+                try:
+                    self._datagroup[name].unlock
+                except KeyError:
+                    print("DataSet named '{name}' does not exist\
+                        in the DataGroup".format(name=name))
+        else:
+            for name in self._datagroup.keys():
+                self._datagroup[name].unlock
+        
+        return self
+
+    def get_data(self, names=None):
+        """Returns a named (or all) DataSet objects.
+
+        This method returns a dictionary containing one or more
+        dataset objects.
+
+        Parameters
+        ----------
+        names : list-like
             The name or names of the underlying DataSet objects to return.
 
         Raises
@@ -314,14 +372,17 @@ class DataGroup(DataComponent):
         if len(self._datagroup) == 0:
             raise Exception("DataSet is empty.")
 
+        d = {}
         if names:       
-            try:            
-                return self._datagroup[names]
-            except KeyError as e: 
-                print(e)
+            for name in names:
+                try:
+                    d[name] = self._datagroup[name]
+                except KeyError as e: 
+                    print(e)
 
         else:
-            return self._datagroup
+            d = self._datagroup
+        return d
 
     def load(self, names=None):
         """Loads the named (or all) contained DataSet objects.
@@ -342,11 +403,34 @@ class DataGroup(DataComponent):
         for name, dataset in self._datagroup.items():
             self._datagroup[name] = dataset.load()
 
-    def save(self):
-        """Saves enclosed DataSet objects to target locations."""
+    def save(self, path=None, names=None):
+        """Saves enclosed or named DataSet objects.
         
-        for dataset in self._datagroup.values():
-            dataset.save()            
+        If the path parameter is provided, it must be a directory. In such case,
+        each enclosed DataSet object or objects specified by the names
+        parameter, will be saved in the new directory specified by the path 
+        parameter in csv format. The filename will remain the same as 
+        the current target filename.  
+        
+        If the path parameter is not provided the data in the enclosed or named
+        DataSet objects will be saved at their current target locations in
+        csv format.
+
+        """
+        if path:
+            if os.path.isfile(path):
+                raise ValueError("The path parameter must be a directory, not a filename.")   
+            if not os.path.exists(path):
+                os.mkdir(path)
+            for dataset in self._datagroup.values():
+                filename = os.path.basename(dataset.target)
+                dataset.save(os.path.join(path, filename))            
+        else:
+            for dataset in self._datagroup.values():
+                dataset.save()            
+
+        return self
+
 
     def add_dataset(self, dataset):
         """Adds a DataSet object to the DataGroup.
@@ -391,11 +475,13 @@ class DataGroup(DataComponent):
                 for filename in filenames:                     
                     d = DataSet(os.path.join(directory, filename))
                     ds = d.load() 
-                    self._datagroup[name] = ds
+                    self._datagroup[ds.name] = ds
         else:
             d = DataSet(path)
             ds = d.load() 
-            self._datagroup[name] = ds     
+            self._datagroup[ds.name] = ds     
+
+        return self
 
     def change_dataset(self, dataset):
         """Replaces a dataset object of same name with the passed dataset.
@@ -417,6 +503,8 @@ class DataGroup(DataComponent):
         else:
             self._add_dataset(dataset)
 
+        return self
+
     def remove_dataset(self, dataset):
         """Removes a dataset from the DataGroup object.
 
@@ -434,6 +522,9 @@ class DataGroup(DataComponent):
             del self._datagroup[dataset.name]
         except KeyError as e:
             print(e)
+
+        return self
+
 
  
            
