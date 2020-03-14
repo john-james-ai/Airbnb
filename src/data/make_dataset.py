@@ -32,8 +32,6 @@ import requests
 
 from bs4 import BeautifulSoup
 
-from data_classes import DataSet
-
 def get_data(project_dir,year, market):
     """Downloads data into raw data directory."""
     

@@ -1,0 +1,6 @@
+# Appendix
+## Source Code
+### Make Data
+The following script downloads the data from [InsideAirbnb]("http://insideairbnb.com/get-the-data.html") in .csv.gz format.
+```{python make_data, eval=F, echo=T, code=readLines('../src/data/make_dataset.py')[26:86]}
+```

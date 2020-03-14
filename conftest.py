@@ -21,7 +21,7 @@
 import pandas as pd
 from pytest import fixture
 
-from .src.data.listings import DataSet
+from .src.data.listings import DataSet, DataGroup
 
 @fixture(scope="session")
 def get_dataset():
@@ -29,6 +29,15 @@ def get_dataset():
     ds = DataSet(sf)
     ds.load()
     return ds
+
+@fixture(scope="session")
+def get_datagroup():
+    path = "./data/raw/san-francisco/2019/"
+    name = 'san-francisco_2019'        
+    dg = DataGroup(name=name) 
+    dg.add_dataset_from_path(path)    
+    return dg
+
 
 
     

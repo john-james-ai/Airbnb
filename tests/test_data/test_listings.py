@@ -121,6 +121,7 @@ class DataSetTests:
 
     @mark.data
     @mark.dataset    
+    @mark.summary
     def test_dataset_summarize(self, get_dataset):           
         ds = get_dataset
         summary = ds.summarize(verbose=True)
@@ -174,7 +175,7 @@ class DataGroupTests:
         path = "./data/raw/san-francisco/2019/ca_san-francisco_2019-12-04_data_listings.csv.gz"
         name = 'san-francisco_2019-12-04'
         dg = DataGroup(name=name) 
-        dg = dg.add_dataset_from_path(path)
+        dg.add_dataset_from_path(path)
         # Get specified single dataset
         dict_of_datasets = dg.get_data(names=['2019-12-04'])
         assert isinstance(dict_of_datasets['2019-12-04'], DataSet), "get_data failed to return dict containing dataset"
@@ -185,12 +186,11 @@ class DataGroupTests:
 
     @mark.data
     @mark.datagroup    
-    def test_datagroup_add_multiple_datasets_from_path(self): 
+    def test_datagroup_add_multiple_datasets_from_path(self, get_datagroup): 
         # Load single dataset from path
         path = "./data/raw/san-francisco/2019/"
         name = 'san-francisco_2019'        
-        dg = DataGroup(name=name) 
-        dg = dg.add_dataset_from_path(path)
+        dg = get_datagroup
         dict_of_datasets = dg.get_data(names=['2019-12-04', '2019-10-14'])
         assert isinstance(dict_of_datasets['2019-12-04'], DataSet), "get_data failed to return dict containing dataset"
         assert isinstance(dict_of_datasets['2019-10-14'], DataSet), "get_data failed to return dict containing dataset"
@@ -206,7 +206,7 @@ class DataGroupTests:
     def test_datagroup_add_dataset(self, get_dataset): 
         ds = get_dataset
         dg = DataGroup(name='san-fran') 
-        dg = dg.add_dataset(ds)
+        dg.add_dataset(ds)
         # Check for single dataset by name
         dict_of_datasets = dg.get_data(names=['2019-12-04'])
         assert isinstance(dict_of_datasets['2019-12-04'], DataSet), "get_data failed to return dict containing dataset"
@@ -220,11 +220,10 @@ class DataGroupTests:
 
     @mark.data
     @mark.datagroup    
-    def test_datagroup_locking(self):    
+    def test_datagroup_locking(self, get_datagroup):    
         name = 'san-francisco_2019'
         path = "./data/raw/san-francisco/2019/"
-        dg = DataGroup(name=name)
-        dg.add_dataset_from_path(path)
+        dg = get_datagroup
         # Test unlocking of all DataSet objects
         dg.unlock_datasets()
         ds = dg.get_data()
@@ -256,11 +255,10 @@ class DataGroupTests:
                   
     @mark.data
     @mark.datagroup    
-    def test_datagroup_save(self):    
+    def test_datagroup_save(self, get_datagroup):    
         name = 'san-francisco_2019'        
         path = "./data/raw/san-francisco/2019/"
-        dg = DataGroup(name=name)
-        dg.add_dataset_from_path(path)
+        dg = get_datagroup
         # Attempt to save without path parameter
         # should fail since items are locked
         with raises(Exception):
@@ -274,3 +272,15 @@ class DataGroupTests:
             assert str(os.path.dirname(target)+"/") == path, "Target not updated to new location"
             assert os.path.exists(target), "DataSet objects not saved to correct location"
         shutil.rmtree(path)
+
+    @mark.data
+    @mark.datagroup    
+    @mark.summary
+    def test_datagroup_summary(self, get_datagroup):    
+        name = 'san-francisco_2019'        
+        path = "./data/raw/san-francisco/2019/"
+        dg = get_datagroup
+        summary = dg.summarize(verbose=True)        
+        assert isinstance(summary, dict), "DataGroup summary failed to return a dataframe."
+        assert isinstance(summary['stats'], pd.DataFrame), "Summary stats not dataframe object."
+        assert isinstance(summary['data'], pd.DataFrame), "Summary data not dataframe object."

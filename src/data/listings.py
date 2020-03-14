@@ -23,6 +23,7 @@ from abc import ABC, abstractmethod
 import math
 import os
 
+from collections import OrderedDict 
 import numpy as np
 import pandas as pd
 
@@ -176,8 +177,6 @@ class DataSet(DataComponent):
         else:        
             self._dataframe = pd.read_csv(self._source, low_memory=False)
 
-        return self
-
     def save(self, path=None, **kwargs):
         """Saves the dataframe to the a csv file.        
 
@@ -229,8 +228,6 @@ class DataSet(DataComponent):
             else:
                 self._dataframe.to_csv(self._target)                
 
-        return self
-
     def summarize(self, verbose=False):
         """Produces a summary of a dataframe.
         
@@ -242,22 +239,46 @@ class DataSet(DataComponent):
         if self._dataframe.empty:
             raise Exception("DataSet is empty. Run load method on DataSet object.")
 
-        summary = {}
+        summary = OrderedDict()
+        # Extract market and date information.
+        summary['Date'] = self._source.split("_")[2:3][0]
         # Obtain basic statistics
         summary['Observations'] = self._dataframe.shape[0]
         summary['Variables'] = self._dataframe.shape[1]
         summary['Size (MB)'] = sum(self._dataframe.memory_usage(index=True))/1000000
         
         # Get columns by datatype
-        dtypes = self._dataframe.dtypes.value_counts()
-        dtypes_dict = dtypes.to_dict()
-        for k, v in dtypes_dict.items():
-            summary[k] = v
+        df = self._dataframe.select_dtypes(include=np.number)
+        if not df.empty:
+            summary['Numeric Variables'] = df.shape[1]
+        else:
+            summary['Numeric Variables'] = 0 
+        df = self._dataframe.select_dtypes(include='object')
+        if not df.empty:
+            summary['Object Variables'] = df.shape[1]
+        else:
+            summary['Object Variables'] = 0        
+        df = self._dataframe.select_dtypes(include='category')
+        if not df.empty:
+            summary['Categorical Variables'] = df.shape[1]
+        else:
+            summary['Categorical Variables'] = 0                 
+        df = self._dataframe.select_dtypes(include='bool')
+        if not df.empty:
+            summary['Boolean Variables'] = df.shape[1]
+        else:
+            summary['Boolean Variables'] = 0        
+        df = self._dataframe.select_dtypes(include=np.datetime64)
+        if not df.empty:
+            summary['Datetime Variables'] = df.shape[1]
+        else:
+            summary['Datetime Variables'] = 0                                
+
 
         # Count missing values
         counts = []
-        min_ranges = [0.000, 0.001, 0.051, 0.101, 0.251, 0.501]
-        max_ranges = [0.000, 0.050, 0.100, 0.250, 0.500, 1.000]
+        min_ranges = [0.000, 0.001, 0.251, 0.501]
+        max_ranges = [0.000, 0.250, 0.500, 1.000]
 
         missing = self._dataframe.isna().sum() / self._dataframe.shape[0]
         def count_values_in_range(series, min_range, max_range):
@@ -267,11 +288,9 @@ class DataSet(DataComponent):
             counts.append(count_values_in_range(missing, min_range, max_range))
         
         summary["# Columns with no Missing Values"] = counts[0]
-        summary["# Columns with 0 to 5% Missing Values"] = counts[1]
-        summary["# Columns with 5% to 10% Missing Values"] = counts[2]
-        summary["# Columns with 10% to 25% Missing Values"] = counts[3]
-        summary["# Columns with 25% to 50% Missing Values"] = counts[4]
-        summary["# Columns with more than 50% Missing Values"] = counts[5]
+        summary["# Columns with up to 25% Missing Values"] = counts[1]
+        summary["# Columns with 25% to 50% Missing Values"] = counts[2]
+        summary["# Columns with more than 50% Missing Values"] = counts[3]
 
         if verbose:
             p = Printer()
@@ -329,8 +348,6 @@ class DataGroup(DataComponent):
             for name in self._datagroup.keys():
                 self._datagroup[name].lock
         
-        return self
-
     def unlock_datasets(self, names=None):
         """Unlocks the enclosed (or named) DataSet objects.
 
@@ -351,8 +368,6 @@ class DataGroup(DataComponent):
             for name in self._datagroup.keys():
                 self._datagroup[name].unlock
         
-        return self
-
     def get_data(self, names=None):
         """Returns a named (or all) DataSet objects.
 
@@ -429,8 +444,6 @@ class DataGroup(DataComponent):
             for dataset in self._datagroup.values():
                 dataset.save()            
 
-        return self
-
 
     def add_dataset(self, dataset):
         """Adds a DataSet object to the DataGroup.
@@ -452,8 +465,6 @@ class DataGroup(DataComponent):
                 DataGroup".format(name=name))
         self._datagroup[name] = dataset
 
-        return self
-
     def add_dataset_from_path(self, path):
         """Adds DataSet objects from files located at path.
 
@@ -473,15 +484,13 @@ class DataGroup(DataComponent):
         if os.path.isdir(path):
             for directory, _, filenames in os.walk(path):
                 for filename in filenames:                     
-                    d = DataSet(os.path.join(directory, filename))
-                    ds = d.load() 
+                    ds = DataSet(os.path.join(directory, filename))
+                    ds.load() 
                     self._datagroup[ds.name] = ds
         else:
-            d = DataSet(path)
-            ds = d.load() 
+            ds = DataSet(path)
+            ds.load() 
             self._datagroup[ds.name] = ds     
-
-        return self
 
     def change_dataset(self, dataset):
         """Replaces a dataset object of same name with the passed dataset.
@@ -503,8 +512,6 @@ class DataGroup(DataComponent):
         else:
             self._add_dataset(dataset)
 
-        return self
-
     def remove_dataset(self, dataset):
         """Removes a dataset from the DataGroup object.
 
@@ -523,12 +530,46 @@ class DataGroup(DataComponent):
         except KeyError as e:
             print(e)
 
-        return self
+    def summarize(self, verbose=False):
+        """Returns and optionally prints a DataGroup summary.
 
+        The DataGroup summary includes summary data and summary statistics. 
+        Summary data is rendered for each DataSet object. The summary
+        statistics are the descriptive statistics for the summary data.
+        For instance, summary data would include the number of observations
+        in each DataSet. The summary statistics would include a 5 number
+        summary of the number of observations across all DataSet. 
+        
+        Parameters
+        ----------
+        verbose : Boolean
+            If True, the DataGroup summary is printed to sysout.
 
- 
-           
+        Returns
+        -------
+        Dictionary containing two elements: 'stats' and 'data'. The
+            'stats' element provides descriptive statistics for
+            the summary 'data'.
 
+        """
+        summary = {}
+        # Compute summaries for each DataSet object.
+        summary_data = pd.DataFrame()
+        for dataset in self._datagroup.values():
+            summary_dict = dataset.summarize()
+            summary_df = pd.DataFrame(summary_dict, index=[0])
+            summary_data = pd.concat([summary_df, summary_data], 
+                                    ignore_index=True, axis=0, sort=False)
+        summary['data'] = summary_data
 
+        # Compute descriptive statistics on summary data.
+        summary_data = summary_data.drop(['Date'], axis=1)
+        summary_stats = summary_data.describe().T.round(0)
+        summary_stats = summary_stats.reset_index() 
+        summary['stats'] = summary_stats
+        if verbose:
+            print(summary['stats'])
+            print(summary['data'])
 
+        return summary
 

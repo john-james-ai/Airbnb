@@ -62,7 +62,7 @@ import numpy as np
 import pandas as pd
 ```
 
-```{r child = '20_eda.Rmd'}
+```{r child = '20_data_collection.Rmd'}
 ```
 
 

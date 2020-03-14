@@ -1,0 +1,15 @@
+# Data Collection
+The data for this study was obtained from [@InsideAirbnb2016] and is comprised of 48 Airbnb listings files for the San Francisco market. The listing files, each containing approximately one month's listings, cover the 48 months between between December 2, 2015 and December 4, 2019. 
+
+## Summary of San Francisco Market Listings Data
+The following summarizes the 48 listings datasets from the San Francisco market from December 2015 through December 2019.
+```{python summary, eval=T, echo=F, cache=F, code=readLines('../notebooks/1.0_data_summary.py')[21:30]}
+```
+
+`r kfigr::figr(label = "summary", prefix = TRUE, link = TRUE, type="Table")`: San Francisco Listings Summary
+```{r summary, eval=T, echo=F, results='asis'}
+kable(py$summary_stats) %>%
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=T)
+```
+
+

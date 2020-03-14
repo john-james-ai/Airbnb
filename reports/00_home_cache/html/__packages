@@ -1,0 +1,16 @@
+base
+methods
+datasets
+utils
+grDevices
+graphics
+stats
+extrafont
+htmltools
+kableExtra
+kfigr
+knitr
+ggplot2
+plotly
+reticulate
+rmarkdown
