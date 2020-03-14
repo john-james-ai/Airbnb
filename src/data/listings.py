@@ -244,8 +244,7 @@ class DataSet(DataComponent):
         summary['Date'] = self._source.split("_")[2:3][0]
         # Obtain basic statistics
         summary['Observations'] = self._dataframe.shape[0]
-        summary['Variables'] = self._dataframe.shape[1]
-        summary['Size (MB)'] = sum(self._dataframe.memory_usage(index=True))/1000000
+        summary['Variables'] = self._dataframe.shape[1]        
         
         # Get columns by datatype
         df = self._dataframe.select_dtypes(include=np.number)
@@ -275,9 +274,9 @@ class DataSet(DataComponent):
             summary['Datetime Variables'] = 0                                
 
 
-        # Count missing values
+        # Count missing values column-wise
         counts = []
-        min_ranges = [0.000, 0.001, 0.251, 0.501]
+        min_ranges = [0.000, 0.0001, 0.251, 0.501]
         max_ranges = [0.000, 0.250, 0.500, 1.000]
 
         missing = self._dataframe.isna().sum() / self._dataframe.shape[0]
@@ -287,10 +286,39 @@ class DataSet(DataComponent):
         for min_range, max_range in zip(min_ranges, max_ranges):
             counts.append(count_values_in_range(missing, min_range, max_range))
         
-        summary["# Columns with no Missing Values"] = counts[0]
-        summary["# Columns with up to 25% Missing Values"] = counts[1]
-        summary["# Columns with 25% to 50% Missing Values"] = counts[2]
-        summary["# Columns with more than 50% Missing Values"] = counts[3]
+        summary["% Columns with no Missing Values"] = \
+            counts[0] / self._dataframe.shape[1] * 100
+        summary["% Columns with up to 25% Missing Values"] = \
+            counts[1] / self._dataframe.shape[1] * 100
+        summary["% Columns with 25% to 50% Missing Values"] = \
+            counts[2] / self._dataframe.shape[1] * 100
+        summary["% Columns with more than 50% Missing Values"] = \
+            counts[3] / self._dataframe.shape[1] * 100
+
+        # Count missing values case-wise
+        counts = []
+        min_ranges = [0.000, 0.0001, 0.101, 0.251]
+        max_ranges = [0.000, 0.100, 0.250, 1]        
+        missing = pd.Series()
+        
+        for i in range(len(self._dataframe.index)):
+            missing_by_row = pd.Series(self._dataframe.iloc[i].isnull().sum())                
+            missing = pd.concat([missing, missing_by_row])
+
+        missing = missing / self._dataframe.shape[1]        
+        for min_range, max_range in zip(min_ranges, max_ranges):
+            counts.append(count_values_in_range(missing, min_range, max_range))
+        
+        summary["% Complete cases"] = \
+            counts[0] / self._dataframe.shape[0] * 100
+        summary["% Cases with up to 10% Missing Values"] = \
+            counts[1] / self._dataframe.shape[0] * 100
+        summary["% Cases with 10% to 25% Missing Values"] = \
+            counts[2] / self._dataframe.shape[0] * 100
+        summary["% Cases with more than 25% Missing Values"] = \
+            counts[3] / self._dataframe.shape[0] * 100
+
+        summary['Size (MB)'] = sum(self._dataframe.memory_usage(index=True))/1000000
 
         if verbose:
             p = Printer()
@@ -564,7 +592,7 @@ class DataGroup(DataComponent):
 
         # Compute descriptive statistics on summary data.
         summary_data = summary_data.drop(['Date'], axis=1)
-        summary_stats = summary_data.describe().T.round(0)
+        summary_stats = summary_data.describe().T.round(2)
         summary_stats = summary_stats.reset_index() 
         summary['stats'] = summary_stats
         if verbose:

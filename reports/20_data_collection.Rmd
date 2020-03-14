@@ -1,8 +1,8 @@
 # Data Collection
-The data for this study was obtained from [@InsideAirbnb2016] and is comprised of 48 Airbnb listings files for the San Francisco market. The listing files, each containing approximately one month's listings, cover the 48 months between between December 2, 2015 and December 4, 2019. 
+The data for this study was obtained from @InsideAirbnb2016 and is comprised of 49 Airbnb listings files for the San Francisco market. The listing files, each containing approximately one month's listings, cover the 48 months between between December 2, 2015 and December 4, 2019. 
 
 ## Summary of San Francisco Market Listings Data
-The following summarizes the 48 listings datasets from the San Francisco market from December 2015 through December 2019.
+The following summarizes the 49 listings datasets from the San Francisco market from December 2015 through December 2019.
 ```{python summary, eval=T, echo=F, cache=F, code=readLines('../notebooks/1.0_data_summary.py')[21:30]}
 ```
 
@@ -12,4 +12,14 @@ kable(py$summary_stats) %>%
   kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=T)
 ```
 
+As indicated in `r kfigr::figr(label = "summary", prefix = TRUE, link = TRUE, type="Table")`, each file contains approximately 7600 observations on average, ranging from about 4700 to 9000 listings. The number of variables in the datasets are inconsistent, ranging from 92 to 106. We'll address this during the variable selection and feature engineering stages.    
 
+Next, we have the number of variables by type. According to `r kfigr::figr(label = "summary", prefix = TRUE, link = TRUE, type="Table")`, the data is comprised solely of numeric and object (string) variables. Once we review the codebook, we may need to recast the data types of select variables. 
+
+The next four statistics reveal the missing data picture. Averaging over the 49 files, 80% of the columns have fewer than 25% missing values. From a case-wise perspective,85% of the cases have fewer than 25% missing values. None of the files contained 100% complete cases.
+
+Prior to launching our exploratory data analysis (EDA), we'll split each file into a training, validation and test set, then combine them for analysis and modeling. Each file is approximately 6MB, hence the complete dataset should consume about 300MB of memory.
+
+For a file-level summary, refer to Appendix A.
+
+## Codebook

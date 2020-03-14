@@ -1,5 +1,16 @@
 # Appendix
-## Source Code
+## Appendix A : Data Collection
+### Summary of San Framcisco Market Listings Data 
+`r kfigr::figr(label = "summary_data", prefix = TRUE, link = TRUE, type="Table")`: San Francisco Listings Summary
+```{r summary_data, eval=T, echo=F, results='asis'}
+kable(py$summary_data) %>%
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=T)
+```
+
+## Appendix B : Exploratory Data Analysis
+
+## Appendix C : Source Code
+
 ### Make Data
 The following script downloads the data from [InsideAirbnb]("http://insideairbnb.com/get-the-data.html") in .csv.gz format.
 ```{python make_data, eval=F, echo=T, code=readLines('../src/data/make_dataset.py')[26:86]}

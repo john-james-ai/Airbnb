@@ -9,6 +9,8 @@ output:
     toc_float: true
     theme: flatly
     highlight: zenburn
+bibliography: Airbnb.bib
+link-citations: yes
 ---
 
 ```{r libraries, echo=FALSE, cache=FALSE, warning=FALSE, message=FALSE, results='hide'}
